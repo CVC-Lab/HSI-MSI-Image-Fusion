@@ -21,7 +21,7 @@ cd ..
 cd simulation
 
 % get the wavelength of each band
-wave = 400:(2500-400)/(220-1):2500
+wave = 400:(2500-400)/(220-1):2500;
 ind = setdiff(1:220,bands_removed);
 wave = wave(ind);
 
@@ -106,4 +106,4 @@ for band = 1:N3
 end
 
 % add noise to the HSI
-[HSI,noise_tenH] = add_noise(HSI,35); % noisy HSI of SNR about 35
+[HSI,noise_tenH] = add_noise(HSI,30); % noisy HSI of SNR about 30

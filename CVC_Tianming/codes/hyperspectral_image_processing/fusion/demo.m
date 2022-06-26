@@ -22,7 +22,14 @@ cd ..
 cd quality_metrics
 
 % evaluate the fused result
-[psnr,rmse,ergas,sam,uiqi,ssim,DD,CCS] = quality_assessment(SRI,SRI_fused,0,1/4);
+[psnr,rmse,ergas,sam,uiqi,ssim,DD,CCS] = quality_assessment(SRI,SRI_fused,0,1/4)
 
 cd ..
 cd fusion
+
+% check the accuracy visually
+I_SRI = SRI(:,:,2);
+I_SRI =(I_SRI-min(I_SRI(:)))/(max(I_SRI(:))-min(I_SRI(:)));
+I_SRIfused = SRI_fused(:,:,2);
+I_SRIfused =(I_SRIfused-min(I_SRIfused(:)))/(max(I_SRIfused(:))-min(I_SRIfused(:)));
+imtool([I_SRI I_SRIfused])
