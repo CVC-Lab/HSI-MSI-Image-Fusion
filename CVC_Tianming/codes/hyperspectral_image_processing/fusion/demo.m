@@ -16,7 +16,7 @@ cd fusion
 
 % Assume we know the true blur kernel is of size no more than 13*13, radius
 % is than chosen to be 6
-[SRI_fused,K_est,~] = BGLRF_main(HSI_denoised,MSI,10,10,6);
+[SRI_fused,K_est,~] = BGLRF_main(HSI_denoised,MSI,10,10,8);
 
 cd ..
 cd quality_metrics

@@ -1,4 +1,4 @@
-function [OA,OA_overall] = my_svm(X,Y,Lbls,num)
+ function [OA,OA_overall] = my_svm(X,Y,Lbls,num)
 
 rep = 10;
 
