@@ -109,10 +109,10 @@ for i in range(n3):
     print(ind1)
     print(IND2)
     if IND2.shape[0]==0:
-        spline = UnivariateSpline(temp,TEMP, bbox=[ind1,])
+        spline = UnivariateSpline(temp,TEMP, wave[ind1,])
     else:
         ind2 = IND2[-1]
-        spline = UnivariateSpline(temp,TEMP, bbox=[ind1,ind2])
+        spline = UnivariateSpline(temp,TEMP, wave[ind1,ind2])
     
     yy = spline(temp,TEMP);
     
