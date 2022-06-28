@@ -57,6 +57,11 @@ def main_page():
         Metrics based on spectral measures: 
         1. **SAM** (spectral angle mapper)
         2. **OA** (overall accuracy of classification)
+
+        Other metrics include:
+        1. **PSNR** (Peak signal to noise ratio)
+        2. **RMSE** (Root mean square error)
+        3. **SSIM** (Structural similarity)
         """        
     )
 
@@ -95,7 +100,8 @@ def page2():
     'UIQI': [0.8876,0.8941,0.8957],
     'SSIM': [1.0000,1.0000,1.0000],
     'DD': [0.0048,0.0046,0.0048],
-    'CCS': [0.9296,0.9341,0.9336]}
+    'CCS': [0.9296,0.9341,0.9336],
+    'OA': [0.7408,0.7361,0.7468]}
     )
     st.table(df)
 

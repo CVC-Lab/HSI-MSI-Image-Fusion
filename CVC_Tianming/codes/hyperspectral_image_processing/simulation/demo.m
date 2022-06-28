@@ -71,9 +71,9 @@ ratio = 4;
 K0 = fspecial('gaussian',[9 9],ratio/(2.355)); % 9 = 2*4+1
 
 % blur kernel shifted 2 pixels vertically and horizontally to the top left
-radius = 8;
+radius = 6;
 K = zeros(2*radius+1,2*radius+1);
-K(9:17,9:17) = K0;
+K(1:9,1:9) = K0;
 
 center = zeros(1,2);
 center(1) = N1/2+1;
