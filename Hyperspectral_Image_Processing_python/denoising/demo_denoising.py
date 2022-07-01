@@ -28,15 +28,22 @@ annots = loadmat('../test_data/indian_pines.mat')
 
 X = annots['indian_pines_corrected']
 print(X.shape)
+print(np.max(X))
+# print(X)
+
+X = X/np.max(X)
+# print(np.max(X))
+
+X_original = (X*255).astype(np.uint8)
+im1 = im.fromarray(X_original[:,:,1])
+im1.save('OriginalHSI_slice1.png')
 
 Y,SNR_dB= denoising.denoising(X)
 
-plt.figure(figsize=(12,8))
-plt.plot(SNR_dB)
-plt.show()
+# plt.figure(figsize=(12,8))
+# plt.plot(SNR_dB)
+# plt.show()
 
-im1 = im.fromarray(X[:,:,1])
-im1.save('OriginalHSI_slice1.png')
-
+Y = (Y*255).astype(np.uint8)
 im2 = im.fromarray(Y[:,:,1])
 im2.save('DenoisedHSI_slice1.png')

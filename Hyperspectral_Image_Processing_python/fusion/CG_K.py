@@ -1,9 +1,9 @@
 import numpy as np
-import LHS_K
+from codes.hyperspectral_image_processing.fusion.LHS_K import LHS_K
 
 def CG_K(H ,K0 ,D ,FX ,ind ,IND ,mu ,tau ,N1 ,N2 ,N3):
 
-    normH = np.norm(H[:]) #Frobenius norm
+    normH = np.norm(H[:])
     tolH = 1e-4 *normH
 
     r0 = H - LHS_K(K0 ,D ,FX ,ind ,IND ,mu ,tau ,N1 ,N2 ,N3)

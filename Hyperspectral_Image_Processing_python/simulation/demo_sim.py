@@ -3,8 +3,8 @@ from scipy.io import loadmat
 import pandas as pd
 import numpy as np
 from PIL import Image as im
-import sklearn
-from sklearn.feature_extraction import image
+#import sklearn
+#from sklearn.feature_extraction import image
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -28,20 +28,7 @@ import MNBS
 #import demo_bs
 import add_noise
 
-# https://stackoverflow.com/questions/17190649/how-to-obtain-a-gaussian-filter-in-python
-def fspecial_gaussian(shape=(3,3),sigma=0.5):
-    """
-    2D gaussian mask - should give the same result as MATLAB's
-    fspecial('gaussian',[shape],[sigma])
-    """
-    m,n = [(ss-1.)/2. for ss in shape]
-    y,x = np.ogrid[-m:m+1,-n:n+1]
-    h = np.exp( -(x*x + y*y) / (2.*sigma*sigma) )
-    h[ h < np.finfo(h.dtype).eps*h.max() ] = 0
-    sumh = h.sum()
-    if sumh != 0:
-        h /= sumh
-    return h
+
 
 def sub2ind(array_shape, rows, cols):
     ind = rows*array_shape[1] + cols
@@ -105,14 +92,19 @@ for i in range(n3):
     IND1 = np.argwhere(wave>temp[0]);
     ind1 = IND1[0];
     IND2 = np.argwhere(wave<temp[-1]);
+    #ind2 = IND2[-1]
     print(IND1)
     print(ind1)
     print(IND2)
     if IND2.shape[0]==0:
-        spline = UnivariateSpline(temp,TEMP, wave[ind1,])
+        spline = UnivariateSpline(temp,TEMP, wave[ind1])
     else:
+        wl = []
         ind2 = IND2[-1]
-        spline = UnivariateSpline(temp,TEMP, wave[ind1,ind2])
+        for j in range (ind1,ind2):
+            wl.append(wave[j])
+
+        spline = UnivariateSpline(temp,TEMP, wl)
     
     yy = spline(temp,TEMP);
     
@@ -167,4 +159,4 @@ for i in range(n3):
         HSI[:,:,band] = x[1:ratio:end,1:ratio:end];
 
     # add noise to the HSI
-    HSI,noise_tenH = add_noise.add_noise(HSI,35); # noisy HSI of SNR about 35
+    HSI,noise_tenH = add_noise.add_noise(HSI,30); # noisy HSI of SNR about 35
