@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jul 11 09:43:37 2022
+
+@author: adominick
+"""
+
+# Note you will have to correct the path save location of the starting data in the generation function before running the code
+import matplotlib.pyplot as plt
+from codes.hyperspectral_image_processing.fusion.BGLRF_main import BGLRF_main
+from codes.hyperspectral_image_processing.simulation.Generation import generation
+from codes.hyperspectral_image_processing.denoise.denoising import denoising
+
+
+
+hsi,msi = generation()
+denoised_hsi,SNR_dB = denoising(hsi)
+SRI_fused,K_est = BGLRF_main(denoised_hsi,msi,10,10,6)
+plt.imshow(SRI_fused[:,:,10].T)
+plt.show()
