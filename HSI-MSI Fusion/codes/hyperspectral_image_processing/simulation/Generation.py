@@ -18,7 +18,7 @@ import scipy.io
 
 
 def generation():
-    filename ='//workspace//Aaron//Code//HIP//HIP//test_data//indian_pines.mat'
+    filename ='../test_data/indian_pines.mat'
     mat = scipy.io.loadmat(filename)
     bands_removed = mat["bands_removed"]
     indian_pines_c = mat["indian_pines_corrected"]
@@ -27,7 +27,7 @@ def generation():
     sri = indian_pines_c/scaling
     sri,a = denoising(sri)
     sri = sri[0:144,0:144,:]
-    mat2 = scipy.io.loadmat("//workspace//Aaron//Code//HIP//HIP//simulation//Landsat_TM5.mat")
+    mat2 = scipy.io.loadmat("../simulation/Landsat_TM5.mat")
     
     S1 = mat2["blue"]
     S2 = mat2["green"]
