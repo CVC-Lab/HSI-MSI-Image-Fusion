@@ -12,6 +12,8 @@ def my_svm(X,Y,Lbls,num):
     for i in range(rep):
         np.random.seed(i+1)
         class_ind_train,class_ind_test = svm_samples(Y,Lbls,num);
+        print(class_ind_train[1].shape)
+        print(class_ind_test[1].shape)
         oa,oa_overall = svm_multiclass(X,Y,Lbls,class_ind_train,class_ind_test);
         OA.append(oa);
         OA_overall.append(oa_overall); 

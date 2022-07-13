@@ -35,7 +35,7 @@ def svm_multiclass(X, Y, lbls, class_ind_train, class_ind_test):
 
         SVMModel = SVC(kernel='rbf')
 
-        SVMModel.fit(data_fin[ind1:ind2,:], [np.ones(len(ind1),1),-np.ones(len(ind2),1)])
+        SVMModel.fit(data_fin[ind1:ind2,:], [np.ones((len(ind1),1)),-np.ones((len(ind2),1))])
 
         # save the model to disk
         filename = 'fSVMmulticlass_model.sav'

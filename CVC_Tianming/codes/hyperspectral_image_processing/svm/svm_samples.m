@@ -16,7 +16,7 @@ for i = 1:Lbls_N
     ind_SVM = find(labels_fin==label_no);
     
     if num < 1
-        N_train_cl(i) = floor(num*length(ind_SVM));
+        N_train_cl(i) = floor(num*length(ind_SVM));)
     else
         N_train_cl(i) = num;
     end
