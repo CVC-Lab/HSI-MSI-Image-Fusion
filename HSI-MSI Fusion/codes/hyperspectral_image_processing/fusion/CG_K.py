@@ -1,5 +1,5 @@
 import numpy as np
-from codes.hyperspectral_image_processing.fusion.LHS_K import LHS_K
+from LHS_K import LHS_K
 
 def CG_K(H ,K0 ,D ,FX ,ind ,IND ,mu ,tau ,N1 ,N2 ,N3):
 

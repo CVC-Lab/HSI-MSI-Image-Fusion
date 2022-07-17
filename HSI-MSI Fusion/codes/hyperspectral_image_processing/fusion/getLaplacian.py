@@ -2,7 +2,7 @@ import numpy as np
 import scipy as scp
 
 
-def getLaplacian(I):
+def getLaplacian(I, n3):
 
     I=I.astype('float64')
     epsilon=1e-7
@@ -25,19 +25,20 @@ def getLaplacian(I):
             win_inds=indsM[i-win_size:i+win_size+1,j-win_size:j+win_size+1]
             win_inds=np.sort(win_inds, axis=None)
             winI=I[i-win_size:i+win_size+1,j-win_size:j+win_size+1,:].copy()
-            for i in range(6):
+            for i in range(n3):
                 winI[:,:,i] = winI[:,:,i].T
             winI=np.reshape(winI,(neb_size,c))
             
             win_mu=np.mean(winI,0).T
-            win_mu = np.reshape(win_mu,(6,1))
+            win_mu = np.reshape(win_mu,(n3,1))
             
            
             
             win_var=np.linalg.inv(winI.T @ winI/neb_size - win_mu @ win_mu.T + epsilon/neb_size*np.eye(c))
             winI=winI-np.repeat(win_mu.T,neb_size, axis = 0)
             tvals=(1 + winI @ win_var @ winI.T)/neb_size
-            win_inds = np.reshape(win_inds,(9,1))
+            print(win_inds.shape)
+            win_inds = np.reshape(win_inds,(win_inds.size,1))
             row_inds[len:neb_size**2+len]=np.reshape(np.repeat(win_inds.T,neb_size,axis = 0),(neb_size**2,1))
             col_inds[len:neb_size**2+len]=np.reshape(np.repeat(win_inds.T,neb_size,axis = 1),(neb_size**2,1))
             

@@ -1,21 +1,19 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jun 27 17:18:23 2022
-
-@author: adominick
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
+import sys
+import warnings
 from scipy.interpolate import CubicSpline
-from codes.hyperspectral_image_processing.denoise.denoising import denoising
-from codes.hyperspectral_image_processing.simulation.add_noise import add_noise
-from codes.hyperspectral_image_processing.simulation.MSG import matlab_style_gauss2D
 import cv2
 import scipy.io
 
+sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/denoise')
+sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation')
+warnings.filterwarnings('ignore')
+
+from denoising import denoising
+from add_noise import add_noise
+from MSG import matlab_style_gauss2D
 
 def generation():
     filename ='../test_data/indian_pines.mat'
@@ -73,7 +71,7 @@ def generation():
     for i in range(n3):
         msi[:,:,i] = msi[:,:,i].T
     
-    #msi,noise_ten1 = add_noise(msi,40)
+    msi,noise_ten1 = add_noise(msi,40)
     
     # Shifted blur kernel
     k0 = matlab_style_gauss2D()

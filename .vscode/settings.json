@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./HSI-MSI Fusion/codes/hyperspectral_image_processing/denoise",
+        "./HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation"
+    ]
+}

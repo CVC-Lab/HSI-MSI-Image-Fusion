@@ -1,10 +1,10 @@
 import numpy as np
 import scipy as scp
 import cv2
-from codes.hyperspectral_image_processing.fusion.ADMM_K import ADMM_K
-from codes.hyperspectral_image_processing.fusion.getLaplacian import getLaplacian
-from codes.hyperspectral_image_processing.fusion.nabla import nabla
-from codes.hyperspectral_image_processing.fusion.CG_X import CG_X
+from ADMM_K import ADMM_K
+from getLaplacian import getLaplacian
+from nabla import nabla
+from CG_X import CG_X
 
 def BGLRF_main(Y,Z,alpha,beta,radius):
     # X is initialized first using bicubic interpolation
@@ -24,14 +24,15 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
 
     ## Define parameters, etc.
     n1,n2,N3 = Y.shape
+    temp = np.zeros((n2, n1, N3))
     for i in range(N3):
-        Y[:,:,i] = Y[:,:,i].T
-    Y = np.reshape(Y,[n1*n2,N3])
+        temp[:,:,i] = np.transpose(Y[:,:,i])
+    Y = np.reshape(temp,[n1*n2,N3])
 
-    N1,N2,_ = Z.shape
+    N1,N2,n3 = Z.shape
 
     # graph Laplacian
-    GL = getLaplacian(Z)
+    GL = getLaplacian(Z, n3)
 
     tau = 0 # proximal weight
     L = alpha*GL+tau*scp.sparse.identity(N1*N2) # for updating X

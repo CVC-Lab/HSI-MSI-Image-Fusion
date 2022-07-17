@@ -1,6 +1,6 @@
 import numpy as np
-from codes.hyperspectral_image_processing.fusion.CG_K import CG_K
-from codes.hyperspectral_image_processing.fusion.soft_isotropic import soft_isotropic
+from CG_K import CG_K
+from soft_isotropic import soft_isotropic
 
 def ADMM_K(RHS_1 ,K0 ,D ,FX ,ind ,IND ,beta ,tau ,N1 ,N2 ,N3):
 
