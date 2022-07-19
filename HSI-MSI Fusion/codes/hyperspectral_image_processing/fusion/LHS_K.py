@@ -12,9 +12,9 @@ def LHS_K(K0 ,D ,FX ,ind ,IND ,mu ,tau ,N1 ,N2 ,N3):
     K = K.T
     K0 = np.reshape(K0,(169,1))
     temp = np.zeros((N1, N2))
-    temp = np.reshape(temp,(20736,1))
+    temp = np.reshape(temp,(N1*N2,1))
     temp[ind[:]] = K0[:]
-    temp = np.reshape(temp,(144,144))
+    temp = np.reshape(temp,(N1,N2))
     Fk = np.fft.fft2(temp)
     Fk = Fk.T
     K0 = np.reshape(K0,(13,13))
@@ -23,16 +23,17 @@ def LHS_K(K0 ,D ,FX ,ind ,IND ,mu ,tau ,N1 ,N2 ,N3):
         Fx = FX[:, band]
         Fx = np.reshape(Fx, [N1, N2])
         Fx=Fx.T
-        temp = np.real(np.fft.ifft2(Fx * Fk))
+        temp = np.real(np.fft.ifft2(np.multiply(Fx,Fk)))
 
         y = np.zeros((N1, N2))
         temp = temp.flatten()
         y = y.flatten()
         y[IND[:]] = temp[IND[:]]
-        y = np.reshape(y,(144,144))
+        y = np.reshape(y,(N1,N2))
         Fy = np.fft.fft2(y)
 
-        temp = np.real(np.fft.ifft2(np.conj(Fx) * Fy))
+        Fx=Fx.T
+        temp = np.real(np.fft.ifft2(np.multiply(np.conj(Fx),Fy)))
         #temp = temp.T
         temp = temp.flatten()
         temp = temp[ind[:]]

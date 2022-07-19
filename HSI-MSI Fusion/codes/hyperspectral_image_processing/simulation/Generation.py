@@ -16,7 +16,7 @@ from add_noise import add_noise
 from MSG import matlab_style_gauss2D
 
 def generation():
-    filename ='../test_data/indian_pines.mat'
+    filename ='/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/test_data/indian_pines.mat'
     mat = scipy.io.loadmat(filename)
     bands_removed = mat["bands_removed"]
     indian_pines_c = mat["indian_pines_corrected"]
@@ -25,7 +25,7 @@ def generation():
     sri = indian_pines_c/scaling
     sri,a = denoising(sri)
     sri = sri[0:144,0:144,:]
-    mat2 = scipy.io.loadmat("../simulation/Landsat_TM5.mat")
+    mat2 = scipy.io.loadmat("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation/Landsat_TM5.mat")
     
     S1 = mat2["blue"]
     S2 = mat2["green"]
@@ -123,5 +123,6 @@ def generation():
         hsi[:,:,band] = x[1:-1:4,1:-1:4]
     
     
-    hsi,noise_ten2 = add_noise(hsi,35)
+    hsi,noise_ten2 = add_noise(hsi,30)
+    print(hsi, msi)
     return hsi,msi

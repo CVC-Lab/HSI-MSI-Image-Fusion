@@ -29,7 +29,9 @@ def ADMM_K(RHS_1 ,K0 ,D ,FX ,ind ,IND ,beta ,tau ,N1 ,N2 ,N3):
 
         # update K
         K_pre = K
+        #print(K)
         K = CG_K(rHS, K, D, FX, ind, IND, mu, tau, N1, N2, N3);
+        #print(K)
 
         # update g
         
@@ -41,9 +43,17 @@ def ADMM_K(RHS_1 ,K0 ,D ,FX ,ind ,IND ,beta ,tau ,N1 ,N2 ,N3):
         k=k.T
         k =k.flatten()
         u = np.flip(np.sort(k)) # projection onto the probability simplex
+        print(u)
         for j in range(p * q):
             s = np.sum(u[:j+1])
+            print('summing array', u[:j+1])
+            #print(s)
+            #print(u[j])
             temp = u[j] + 1 / (j+1) * (1 - s)
+            #print((1 - s))
+            #print(1 / (j+1) * (1 - s))
+            
+            print(temp)
             if temp > 0:
                 lam = temp-u[j]
             else:

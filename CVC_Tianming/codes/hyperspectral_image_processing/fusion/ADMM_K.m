@@ -33,7 +33,7 @@ for i = 1:999
     % update KK
     k = K(:)-L2(:);
     
-    u = sort(k,'descend'); % projection onto the probability simplex
+    u = sort(k,'descend') % projection onto the probability simplex
     for j = 1:p*q
         s = sum(u(1:j));
         temp = u(j)+1/j*(1-s);

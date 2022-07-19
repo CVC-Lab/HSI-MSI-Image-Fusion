@@ -32,7 +32,7 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
     N1,N2,n3 = Z.shape
 
     # graph Laplacian
-    GL = getLaplacian(Z, n3)
+    GL = getLaplacian(Z)
 
     tau = 0 # proximal weight
     L = alpha*GL+tau*scp.sparse.identity(N1*N2) # for updating X
@@ -70,17 +70,21 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
     I2 = np.array((range(1,N1,ratio)))
     
     I2 = I2.T
-    I2 = np.reshape(I2,(1,36))
+    I2 = np.reshape(I2,(1,n1))
     I2 = np.repeat(I2,n2,axis=0)
-    I2 = np.reshape(I2,(1296,1))
+    I2 = np.reshape(I2,(n1*n2,1))
     J2 = np.array(range(1,N2,ratio))
-    J2 = np.reshape(J2,(36,1))
+    J2 = np.reshape(J2,(n2,1))
     J2 = np.repeat(J2,n1,axis=0)
     I2 = I2.astype(int)
     J2 = J2.astype(int)
     I2 = np.ravel(I2)
     J2 = np.ravel(J2)
-    arr = np.array([J2,I2])
+    # print(I2.shape)
+    # print(J2.shape)
+    #arr = np.array([J2,I2])
+    arr = np.array([I2,J2])
+    # print(arr)
     ind2 = np.ravel_multi_index(arr,(N1,N2)) # indices for HSI
 
     ## Initialization
@@ -92,14 +96,14 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
         y = np.reshape(y,[n1, n2])
         y = y.T
         temp = np.zeros((N1,N2))
-        temp = np.reshape(temp,(20736,1))
-        y = np.reshape(y,(1296,1))
+        temp = np.reshape(temp,(N1*N2,1))
+        y = np.reshape(y,(n1*n2,1))
         temp[ind2[:]] = y[:]
-        temp = np.reshape(temp,(144,144))
-        y = np.reshape(y,(36,36))
+        temp = np.reshape(temp,(N1,N2))
+        y = np.reshape(y,(n1,n2))
         temp = np.fft.fft2(temp)
         temp = temp.T
-        temp = np.reshape(temp,(20736,1))
+        temp = np.reshape(temp,(N1*N2,1))
         temp = np.ravel(temp)
         fY[:,band] = temp[:]
         x = cv2.resize(y,(N1,N2),interpolation=cv2.INTER_CUBIC)
@@ -133,11 +137,11 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
             FX[:,band] = Fx[:]
             Fy = fY[:,band]
             Fy = np.reshape(Fy,[N1, N2])
-            Fx = np.reshape(Fx,(144,144))
+            Fx = np.reshape(Fx,(N1,N2))
             Fy=Fy.T
             Fx=Fx.T
             y = np.real(np.fft.ifft2(np.conj(Fx)*Fy))
-            y = np.reshape(y,(20736,1))
+            y = np.reshape(y,(N1*N2,1))
             test = y[ind[:],0]
             test = test.T
             test = np.reshape(test,(169,1))
