@@ -37,7 +37,7 @@ def getLaplacian(I, n3):
             win_var=np.linalg.inv(winI.T @ winI/neb_size - win_mu @ win_mu.T + epsilon/neb_size*np.eye(c))
             winI=winI-np.repeat(win_mu.T,neb_size, axis = 0)
             tvals=(1 + winI @ win_var @ winI.T)/neb_size
-            print(win_inds.shape)
+            #print(win_inds.shape)
             win_inds = np.reshape(win_inds,(win_inds.size,1))
             row_inds[len:neb_size**2+len]=np.reshape(np.repeat(win_inds.T,neb_size,axis = 0),(neb_size**2,1))
             col_inds[len:neb_size**2+len]=np.reshape(np.repeat(win_inds.T,neb_size,axis = 1),(neb_size**2,1))

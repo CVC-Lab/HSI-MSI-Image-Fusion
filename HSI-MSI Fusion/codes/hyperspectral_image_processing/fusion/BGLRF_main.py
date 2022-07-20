@@ -32,7 +32,9 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
     N1,N2,n3 = Z.shape
 
     # graph Laplacian
-    GL = getLaplacian(Z)
+    GL = getLaplacian(Z, n3)
+    # print(GL)
+    # print(GL.shape)
 
     tau = 0 # proximal weight
     L = alpha*GL+tau*scp.sparse.identity(N1*N2) # for updating X
@@ -83,9 +85,10 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
     # print(I2.shape)
     # print(J2.shape)
     #arr = np.array([J2,I2])
-    arr = np.array([I2,J2])
-    # print(arr)
+    arr = np.array([J2,I2])
     ind2 = np.ravel_multi_index(arr,(N1,N2)) # indices for HSI
+    print(ind2.shape)
+    print(ind2)
 
     ## Initialization
     fY = np.zeros((N1 * N2,N3),dtype='complex') # used in all the iterations

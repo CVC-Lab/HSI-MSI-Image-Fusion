@@ -2,8 +2,7 @@ import numpy as np
 import scipy as scp
 
 
-def getLaplacian(I):
-
+def getLaplacian(I, n3):
     I=I.astype('float64')
     epsilon=1e-7
     win_size=1
@@ -14,6 +13,7 @@ def getLaplacian(I):
     indsM=np.reshape(list(range(img_size)),(h,w))
     #print(indsM)
     #indsM=np.transpose(indsM)
+    indsM=np.transpose(indsM)
     tlen=np.sum(np.sum(1-consts[win_size:-win_size,win_size:-win_size]))*(neb_size**2)
     tlen = round(tlen)
     row_inds=np.zeros((tlen,1))
@@ -29,12 +29,12 @@ def getLaplacian(I):
             win_inds=np.sort(win_inds, axis=None)
             #print(win_inds.shape)
             winI=I[i-win_size:i+win_size+1,j-win_size:j+win_size+1,:].copy()
-            # for i in range(c):
-            #     winI[:,:,i] = winI[:,:,i].T
+            for i in range(n3):
+                winI[:,:,i] = winI[:,:,i].T
             winI=np.reshape(winI,(neb_size,c))
             
             win_mu=np.mean(winI,0).T
-            win_mu = np.reshape(win_mu,(c,1))
+            win_mu = np.reshape(win_mu,(n3,1))
             
            
             
@@ -50,8 +50,8 @@ def getLaplacian(I):
             #print(win_inds.shape)
             cdbsbdwb = np.repeat(win_inds.T,9,axis = 0)
             #print(cdbsbdwb.shape)
-            row_inds[len:neb_size**2+len]=np.reshape(np.repeat(win_inds.T,9,axis = 0),(neb_size**2,1))
-            col_inds[len:neb_size**2+len]=np.reshape(np.repeat(win_inds.T,9,axis = 1),(neb_size**2,1))
+            row_inds[len:neb_size**2+len]=np.reshape(np.repeat(win_inds.T,neb_size,axis = 0),(neb_size**2,1))
+            col_inds[len:neb_size**2+len]=np.reshape(np.repeat(win_inds.T,neb_size,axis = 1),(neb_size**2,1))
             
             #row_inds[len:neb_size**2+len]=np.reshape(np.matlib.repmat(win_inds,1,neb_size),[neb_size**2,1])
             #col_inds[len:neb_size^2+len]=np.reshape(np.matlib.repmat(win_inds.H,[neb_size,1]),[neb_size**2,1])

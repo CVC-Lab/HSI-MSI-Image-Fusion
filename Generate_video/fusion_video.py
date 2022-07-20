@@ -47,8 +47,8 @@ for i in range(len(os.listdir('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’
     #print(hsi.shape)
     denoised_hsi, SNR_db = denoising(hsi)
 
-    print(denoised_hsi)
-    print(msi)
+    print(denoised_hsi.shape)
+    print(msi.shape)
     # denoised_hsi = np.round(denoised_hsi*255)
     # denoised_hsi = denoised_hsi.astype(np.uint8)
 

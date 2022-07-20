@@ -32,12 +32,17 @@ def LHS_K(K0 ,D ,FX ,ind ,IND ,mu ,tau ,N1 ,N2 ,N3):
         y = np.reshape(y,(144,144))
         Fy = np.fft.fft2(y)
 
+        # Fx=Fx.T
         temp = np.real(np.fft.ifft2(np.conj(Fx) * Fy))
+        # temp = temp.T
         #temp = temp.T
+        #print(temp)
         temp = temp.flatten()
         temp = temp[ind[:]]
         
         temp = np.reshape(temp, [p, q])
         K = K + temp
+
+    #print(temp)
 
     return K
