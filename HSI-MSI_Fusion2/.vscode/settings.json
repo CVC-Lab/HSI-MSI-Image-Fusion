@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./codes/hyperspectral_image_processing/fusion"
+    ]
+}

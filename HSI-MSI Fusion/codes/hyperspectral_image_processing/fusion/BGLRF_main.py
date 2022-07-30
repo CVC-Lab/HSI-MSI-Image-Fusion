@@ -84,8 +84,10 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
     J2 = np.ravel(J2)
     # print(I2.shape)
     # print(J2.shape)
-    #arr = np.array([J2,I2])
+    # arr = np.array([I2,J2])
     arr = np.array([J2,I2])
+    print(I2.shape)
+    print(J2.shape)
     ind2 = np.ravel_multi_index(arr,(N1,N2)) # indices for HSI
     print(ind2.shape)
     print(ind2)

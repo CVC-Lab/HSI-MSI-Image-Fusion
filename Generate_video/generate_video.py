@@ -4,6 +4,7 @@ import sys
 import warnings
 from generate_hsi import generate_hsi
 import numpy as np
+import matplotlib.pyplot as plt
 
 sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/denoise')
 sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation')
@@ -31,34 +32,50 @@ def generate_video(video_name, image_folder):
     height, width, layers = frame.shape  
     print(frame.shape)
   
-    video = cv2.VideoWriter(video_name, 0, 5, (width, height)) 
+    # video = cv2.VideoWriter(video_name, 0, 5, (width, height)) 
+    video = cv2.VideoWriter(video_name, 0, 5, (height, height)) 
 
     #Uncomment while generating lower resolution video
     #video = cv2.VideoWriter(video_name, 0, 1, (int(width/4), int(height/4))) 
+    # video = cv2.VideoWriter(video_name, 0, 1, (int(height/4), int(height/4))) 
   
     # Appending the images to the video one by one
     for image in images: 
 
         im = cv2.imread(os.path.join(image_folder, image))
         
+        # cv2.imshow("original", im)
+
+        im_cropped = im[:,140:500]
+        im = im_cropped
+
+        # plt.imshow(im_cropped)
+        # plt.show()
         # Uncomment the lines below to denoise image
-        im = im/255
-        im, SNR_db = denoising(im)
-        im = np.round(im*255)
-        im = im.astype(np.uint8)
-
-        #Uncomment the line below to generate lower resolution image
-        #im = generate_hsi(im, height, width, layers)
-
-        # Uncomment the lines below to generate msi colored
         # im = im/255
-        # im,SNR_db = denoising(im)
-        # im, noise = add_noise(im, 40)
+        # im, SNR_db = denoising(im)
         # im = np.round(im*255)
         # im = im.astype(np.uint8)
-        # grayscale = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-        # print(grayscale.shape)
-        # im = cv2.cvtColor(grayscale, cv2.COLOR_GRAY2BGR)
+
+        #Uncomment the line below to generate lower resolution image
+        # im = generate_hsi(im, height, width, layers)
+        # im = generate_hsi(im, height, height, layers)
+        # plt.imshow(im)
+        # plt.show()
+
+        # Uncomment the lines below to generate msi colored
+        im = im/255
+        im,SNR_db = denoising(im)
+        im, noise = add_noise(im, 40)
+        im = np.round(im*255)
+        im = im.astype(np.uint8)
+        grayscale = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+        print(grayscale.shape)
+        print(np.max(grayscale))
+        im = cv2.cvtColor(grayscale, cv2.COLOR_GRAY2BGR)
+        plt.imshow(im)
+        plt.show()
+
         # #im.show
         
         video.write(im)
