@@ -181,7 +181,7 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
 
         print('GLRF - iteration {}: \n'.format(iter,err[iter,0],err[iter,1]))
         print(err[iter,1])
-        if err[iter,1] < 1e-3:
+        if err[iter,1] < 2e-2:
             err = err[:iter,:]
             X = np.reshape(X,[N1,N2,N3])
             break

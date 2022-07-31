@@ -6,9 +6,9 @@ import os
 from generate_video import generate_video
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/denoise')
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation')
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/fusion')
+sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/denoise')
+sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/simulation')
+sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/fusion')
 warnings.filterwarnings('ignore')
 
 from BGLRF_main import BGLRF_main
@@ -41,7 +41,7 @@ for i in range(len(os.listdir('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’
     msi = cv2.imread(os.path.join(msi_folder, 'frame%d.jpg' %i))
     msi = cv2.cvtColor(msi, cv2.COLOR_BGR2GRAY)
     msi = msi.reshape((msi.shape[0],msi.shape[1],1))
-    print(msi)
+    # print(msi)
     # msi = msi/np.max(msi)
     msi = msi/255
 
@@ -57,15 +57,18 @@ for i in range(len(os.listdir('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’
 
     SRI_fused,K_est = BGLRF_main(denoised_hsi,msi,10,10,6)
 
+    SRI_fused = np.reshape(SRI_fused, (msi.shape[0],msi.shape[1],3))
+    plt.imshow(SRI_fused)
+    plt.show()
+
     SRI_fused = np.round(SRI_fused*255)
     SRI_fused = SRI_fused.astype(np.uint8)
 
     cv2.imwrite('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/bmx/fused/frame.jpg', SRI_fused)
 
-    SRI_fused = np.reshape(SRI_fused, (360,360,3))
+    SRI_fused = np.reshape(SRI_fused, (msi.shape[0],msi.shape[1],3))
     # cv2.imshow(SRI_fused)
-    plt.imshow(SRI_fused)
-    plt.show()
+    
     cv2.waitKey(0) 
 
 cv2.destroyAllWindows() 

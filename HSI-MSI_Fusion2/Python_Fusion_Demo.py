@@ -14,6 +14,6 @@ from denoising import denoising
 hsi,msi = generation()
 denoised_hsi,SNR_dB = denoising(hsi)
 SRI_fused,K_est = BGLRF_main(denoised_hsi,msi,10,10,6)
-print(SRI_fused)
+# print(SRI_fused)
 plt.imshow(SRI_fused[:,:,10].T)
 plt.show()

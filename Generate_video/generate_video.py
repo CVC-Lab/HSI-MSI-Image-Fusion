@@ -33,33 +33,44 @@ def generate_video(video_name, image_folder):
     print(frame.shape)
   
     # video = cv2.VideoWriter(video_name, 0, 5, (width, height)) 
-    video = cv2.VideoWriter(video_name, 0, 5, (height, height)) 
+    # video = cv2.VideoWriter(video_name, 0, 5, (height, height)) 
+    video = cv2.VideoWriter(video_name, 0, 5, (144, 144)) 
 
     #Uncomment while generating lower resolution video
-    #video = cv2.VideoWriter(video_name, 0, 1, (int(width/4), int(height/4))) 
-    # video = cv2.VideoWriter(video_name, 0, 1, (int(height/4), int(height/4))) 
+    #video = cv2.VideoWriter(video_name, 0, 5, (int(width/4), int(height/4))) 
+    # video = cv2.VideoWriter(video_name, 0, 5, (int(height/4), int(height/4))) 
+    # video = cv2.VideoWriter(video_name, 0, 5, (36, 36)) 
   
     # Appending the images to the video one by one
     for image in images: 
 
         im = cv2.imread(os.path.join(image_folder, image))
         
-        # cv2.imshow("original", im)
+        
 
         im_cropped = im[:,140:500]
         im = im_cropped
 
-        # plt.imshow(im_cropped)
+        im = cv2.resize(im, (144, 144),interpolation = cv2.INTER_NEAREST)
+
+        # plt.imshow(im)
         # plt.show()
         # Uncomment the lines below to denoise image
         # im = im/255
         # im, SNR_db = denoising(im)
+        
         # im = np.round(im*255)
         # im = im.astype(np.uint8)
+
+        # cv2.imshow("original", im)
+        # # plt.imshow(im)
+        # plt.show()
+        
 
         #Uncomment the line below to generate lower resolution image
         # im = generate_hsi(im, height, width, layers)
         # im = generate_hsi(im, height, height, layers)
+        # im = generate_hsi(im, 144, 144, layers)
         # plt.imshow(im)
         # plt.show()
 
@@ -70,8 +81,8 @@ def generate_video(video_name, image_folder):
         im = np.round(im*255)
         im = im.astype(np.uint8)
         grayscale = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-        print(grayscale.shape)
-        print(np.max(grayscale))
+        # print(grayscale.shape)
+        # print(np.max(grayscale))
         im = cv2.cvtColor(grayscale, cv2.COLOR_GRAY2BGR)
         plt.imshow(im)
         plt.show()
