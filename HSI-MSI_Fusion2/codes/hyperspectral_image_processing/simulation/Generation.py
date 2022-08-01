@@ -124,6 +124,6 @@ def generation():
     
     
     hsi,noise_ten2 = add_noise(hsi,35)
-    print(hsi.shape)
-    print(msi.shape)
+    print(type(hsi))
+    print(type(msi))
     return hsi,msi

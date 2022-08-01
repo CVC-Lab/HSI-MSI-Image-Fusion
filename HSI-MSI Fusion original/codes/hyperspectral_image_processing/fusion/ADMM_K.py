@@ -16,7 +16,7 @@ def ADMM_K(RHS_1 ,K0 ,D ,FX ,ind ,IND ,beta ,tau ,N1 ,N2 ,N3):
     kK = K0
     L2 = np.zeros((p, q))
 
-    err = np.zeros((200, 1))
+    # err = np.zeros((200, 1))
 
     for i in range(999):
 

@@ -18,7 +18,7 @@ def ADMM_K(RHS_1 ,K0 ,D ,FX ,ind ,IND ,beta ,tau ,N1 ,N2 ,N3):
 
     err = np.zeros((1000, 1))
 
-    for i in range(999):
+    for i in range(5):
 
         rHS_2 = mu * D.T @ (gg+l1)
         rHS_2 = np.reshape(rHS_2, [p, q])
