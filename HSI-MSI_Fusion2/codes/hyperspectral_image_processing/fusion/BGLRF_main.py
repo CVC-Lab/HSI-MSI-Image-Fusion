@@ -5,6 +5,7 @@ from ADMM_K import ADMM_K
 from getLaplacian import getLaplacian
 from nabla import nabla
 from CG_X import CG_X
+import matplotlib.pyplot as plt
 
 def BGLRF_main(Y,Z,alpha,beta,radius):
     # X is initialized first using bicubic interpolation
@@ -33,8 +34,8 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
 
     # graph Laplacian
     GL = getLaplacian(Z, n3)
-    print(GL)
-    print(GL.shape)
+    # print(GL)
+    # print(GL.shape)
 
     tau = 0 # proximal weight
     L = alpha*GL+tau*scp.sparse.identity(N1*N2) # for updating X
@@ -69,13 +70,15 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
 
     ratio = round(N1/n1) # downsampling ratio
 
-    I2 = np.array((range(1,N1,ratio)))
+    I2 = np.array((range(0,N1,ratio)))
+    # print(I2.shape)
+    # I2 = np.array((range(N1)))
     
     I2 = I2.T
     I2 = np.reshape(I2,(1,n2))
     I2 = np.repeat(I2,n2,axis=0)
     I2 = np.reshape(I2,(n1*n2,1))
-    J2 = np.array(range(1,N2,ratio))
+    J2 = np.array(range(0,N2,ratio))
     J2 = np.reshape(J2,(n1,1))
     J2 = np.repeat(J2,n1,axis=0)
     I2 = I2.astype(int)
@@ -90,6 +93,10 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
     ## Initialization
     fY = np.zeros((N1 * N2,N3),dtype='complex') # used in all the iterations
     X = np.zeros((N1*N2,N3))
+
+    # print("BGLRF_1 output")
+    # plt.imshow(X.reshape(N1,N2,N3))
+    # plt.show()
 
     for band in range(N3):
         y = Y[:,band]
@@ -112,6 +119,9 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
         
         X[:,band] = x[:]
 
+    # print("BGLRF_2 output")
+    # plt.imshow(X.reshape(N1,N2,N3))
+    # plt.show()
     K = np.zeros((13,13))
 
     maxiters = 100 # maximum number of iterations
@@ -176,6 +186,10 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
         X_pre = X.copy()
         X = CG_X(rhs,X,Fk,L,ind2,N1,N2,N3,tau)
 
+        # print("BGLRF_3 output")
+        # plt.imshow(X.reshape(N1,N2,N3))
+        # plt.show()
+
         err[iter,0] = np.linalg.norm(K-K_pre,'fro')/np.linalg.norm(K,'fro')
         err[iter,1] = np.linalg.norm(X-X_pre,'fro')/np.linalg.norm(X,'fro')
 
@@ -184,6 +198,9 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
         if err[iter,1] < 2e-2:
             err = err[:iter,:]
             X = np.reshape(X,[N1,N2,N3])
+            # print("BGLRF_4 output")
+            # plt.imshow(X.reshape(N1,N2,N3))
+            # plt.show()
             break
 
     return X, K

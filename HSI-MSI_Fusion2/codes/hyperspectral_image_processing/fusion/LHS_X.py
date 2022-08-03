@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+import matplotlib.pyplot as plt
 
 def LHS_X(X0,Fk,L,IND,N1,N2,N3,tau):
 
@@ -32,6 +33,9 @@ def LHS_X(X0,Fk,L,IND,N1,N2,N3,tau):
     X = X + L @ X0
     X = X+tau*X0
 
+    # print("LHS_X output")
+    # plt.imshow(X.reshape(N1,N2,N3))
+    # plt.show()
     return X
 
    

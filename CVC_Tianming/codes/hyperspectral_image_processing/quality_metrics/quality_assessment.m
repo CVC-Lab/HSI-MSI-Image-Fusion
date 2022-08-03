@@ -53,6 +53,7 @@ n_samples = sz_x(1)*sz_x(2);
 
 % RMSE
 aux = sum(sum((x - y).^2, 1), 2)/n_samples;
+size(aux)
 rmse_per_band = sqrt(aux);
 rmse = sqrt(sum(aux, 3)/n_bands);
 

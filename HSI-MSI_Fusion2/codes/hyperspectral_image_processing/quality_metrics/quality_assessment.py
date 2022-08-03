@@ -1,9 +1,10 @@
 import numpy as np
-from codes.hyperspectral_image_processing.quality_metrics.SpectAngMapper import SpectAngMapper
-from codes.hyperspectral_image_processing.quality_metrics.img_qi import img_qi
-from codes.hyperspectral_image_processing.quality_metrics.cal_ssim import cal_ssim
-from codes.hyperspectral_image_processing.quality_metrics.CC import CC
-from codes.hyperspectral_image_processing.quality_metrics.csnr import csnr
+from sklearn.metrics import mean_squared_error
+# from codes.hyperspectral_image_processing.quality_metrics.SpectAngMapper import SpectAngMapper
+# from codes.hyperspectral_image_processing.quality_metrics.img_qi import img_qi
+# from codes.hyperspectral_image_processing.quality_metrics.cal_ssim import cal_ssim
+# from codes.hyperspectral_image_processing.quality_metrics.CC import CC
+# from codes.hyperspectral_image_processing.quality_metrics.csnr import csnr
 
 def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     # quality_assessment - Computes a number of quality indices from the remote sensing literature,
@@ -48,40 +49,63 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     # Ignore borders
-    y = ground_truth[ignore_edges:-ignore_edges, ignore_edges:-ignore_edges, :]
-    x = estimated[ignore_edges:-ignore_edges, ignore_edges:-ignore_edges, :]
+    # y = ground_truth[ignore_edges:-(ignore_edges+1), ignore_edges:-(ignore_edges+1), :]
+    # x = estimated[ignore_edges:-ignore_edges, ignore_edges:-ignore_edges, :]
+
+    y = ground_truth[:, :, :]
+    x = estimated[:, :, :]
 
     # Size, bands, samples
     sz_x = x.shape
     n_bands = sz_x[2]
     n_samples = sz_x[0]*sz_x[1]
 
+    print(x.shape)
+    print(y.shape)
+
     # RMSE
-    aux = np.sum(np.sum((x - y)**2, 0), 1)/n_samples
-    rmse_per_band = np.sqrt(aux)
-    rmse = np.sqrt(np.sum(aux, 2)/n_bands)
+    # aux = np.sum(np.sum((x - y)**2, axis=0), axis=1)/n_samples
+    # print(aux.shape)
+
+    # aux = np.sum((x - y)**2, axis=(0,1))/n_samples
+    # print(aux.shape)
+
+    # # print(np.sum((x - y)**2, 0).shape)
+    # rmse_per_band = np.sqrt(aux)
+    # rmse = np.sqrt(np.sum(aux, 2)/n_bands)
+
+    rmse_per_band = []
+    for i in range(n_bands):
+        mse = mean_squared_error(x[:,:,i],y[:,:,i].T)
+        rmse_per_band.append(np.sqrt(mse))
+    rmse = np.sum(rmse_per_band)/n_bands
+    print("RMSE", rmse)
 
     # ERGAS
-    mean_y = np.sum(np.sum(y, 0), 1)/n_samples
-    ergas = 100*ratio_ergas*np.sqrt(np.sum((rmse_per_band / mean_y)**2)/n_bands)
+    # mean_y = np.sum(np.sum(y, 0), 1)/n_samples
+    # ergas = 100*ratio_ergas*np.sqrt(np.sum((rmse_per_band / mean_y)**2)/n_bands)
 
-    # SAM
-    sam= SpectAngMapper( ground_truth, estimated )
-    sam=sam*180/np.pi
+    # # SAM
+    # sam= SpectAngMapper( ground_truth, estimated )
+    # sam=sam*180/np.pi
+
     # num = np.sum(x * y, 2)
     # den = np.sqrt(sum(x**2, 2) * np.sum(y**2, 2))
     # sam = np.sum(np.acosd(num / den))/(n_samples)
 
     # UIQI - calls the method described in "A Universal Image Quality Index"
     # by Zhou Wang and Alan C. Bovik
-    q_band = np.zeros(n_bands)
-    for idx1 in range(n_bands):
-        q_band[idx1]=img_qi(ground_truth[:,:,idx1], estimated[:,:,idx1], 32)
-    uiqi = np.mean(q_band)
-    ssim = cal_ssim(ground_truth, estimated,0,0)
-    DD = np.linalg.norm(ground_truth[:]-estimated[:],1)/ground_truth.size
-    CCS = CC(ground_truth,estimated)
-    CCS = np.mean(CCS)
-    psnr=csnr(ground_truth, estimated,0,0)
+    # q_band = np.zeros(n_bands)
+    # for idx1 in range(n_bands):
+    #     q_band[idx1]=img_qi(ground_truth[:,:,idx1], estimated[:,:,idx1].T, 32)
+    # uiqi = np.mean(q_band)
+    # print(uiqi)
 
-    return psnr, rmse, ergas, sam, uiqi, ssim, DD, CCS
+    # ssim = cal_ssim(ground_truth, estimated,0,0)
+    # DD = np.linalg.norm(ground_truth[:]-estimated[:],1)/ground_truth.size
+    # CCS = CC(ground_truth,estimated)
+    # CCS = np.mean(CCS)
+    # psnr=csnr(ground_truth, estimated,0,0)
+
+    # return psnr, rmse, ergas, sam, uiqi, ssim, DD, CCS
+    return

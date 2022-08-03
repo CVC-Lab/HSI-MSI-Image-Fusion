@@ -75,7 +75,7 @@ def generate_hsi(image, height, width, layers):
     
     #print(hsi)
     
-    hsi,noise_ten2 = add_noise(hsi,30)
+    hsi,noise_ten2 = add_noise(hsi,40)
     hsi = np.round(hsi*255)
     hsi = hsi.astype(np.uint8)
     #print(type(hsi))

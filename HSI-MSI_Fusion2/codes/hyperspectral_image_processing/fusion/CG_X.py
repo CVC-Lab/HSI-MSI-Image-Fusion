@@ -1,5 +1,6 @@
 import numpy as np
 from LHS_X import LHS_X
+import matplotlib.pyplot as plt
 
 def CG_X(H,X0,Fk,L,IND,N1,N2,N3,tau):
 
@@ -38,6 +39,10 @@ def CG_X(H,X0,Fk,L,IND,N1,N2,N3,tau):
             p0 = p1
             r0 = r1
             X0 = X
+
+    # print("CG_X output")
+    # plt.imshow(X.reshape(N1,N2,N3))
+    # plt.show()
     return X
 
 

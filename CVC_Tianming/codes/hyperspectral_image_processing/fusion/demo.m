@@ -22,7 +22,7 @@ cd ..
 cd quality_metrics
 
 % evaluate the fused result
-[psnr,rmse,ergas,sam,uiqi,ssim,DD,CCS] = quality_assessment(SRI,SRI_fused,0,1/4)
+[psnr,rmse,ergas,sam,uiqi,ssim,DD,CCS] = quality_assessment(SRI,SRI_fused,0,1/4);
 
 cd ..
 cd fusion

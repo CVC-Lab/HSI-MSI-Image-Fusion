@@ -23,7 +23,23 @@ def generation():
     scaling = mat["scaling"]
     
     sri = indian_pines_c/scaling
+
+    # plt.imshow(indian_pines_c[:,:,10])
+    # plt.show()
+
     sri,a = denoising(sri)
+
+    # plt.imshow(sri[:,:,10])
+    # plt.show()
+
+    # sri_image = np.round(sri*255)
+    # sri_image = sri_image.astype(np.uint8)
+    # cv2.imwrite("Denoised SRI", sri_image[:,:,10])
+    # cv2.imwrite("Original image", indian_pines_c[:,:,10])
+
+
+
+
     sri = sri[0:144,0:144,:]
     mat2 = scipy.io.loadmat("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/simulation/Landsat_TM5.mat")
     
@@ -123,7 +139,10 @@ def generation():
         hsi[:,:,band] = x[1:-1:4,1:-1:4]
     
     
-    hsi,noise_ten2 = add_noise(hsi,35)
-    print(type(hsi))
-    print(type(msi))
-    return hsi,msi
+    hsi,noise_ten2 = add_noise(hsi,30)
+    # print(type(hsi))
+    # print(type(msi))
+
+    # plt.imshow(hsi[:,:,110])
+    # plt.show()
+    return sri,hsi,msi
