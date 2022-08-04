@@ -75,10 +75,13 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     # rmse = np.sqrt(np.sum(aux, 2)/n_bands)
 
     rmse_per_band = []
+    mse_per_band = []
     for i in range(n_bands):
         mse = mean_squared_error(x[:,:,i],y[:,:,i].T)
+        mse_per_band.append((mse))
         rmse_per_band.append(np.sqrt(mse))
     rmse = np.sum(rmse_per_band)/n_bands
+    mse = np.sum(mse_per_band)/n_bands
     print("RMSE", rmse)
 
     # ERGAS
@@ -106,6 +109,8 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     # CCS = CC(ground_truth,estimated)
     # CCS = np.mean(CCS)
     # psnr=csnr(ground_truth, estimated,0,0)
+    s = 10 * np.log10(255**2/mse)
+    print("PSNR ", s)
 
     # return psnr, rmse, ergas, sam, uiqi, ssim, DD, CCS
     return

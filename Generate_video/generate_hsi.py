@@ -58,8 +58,8 @@ def generate_hsi(image, height, width, layers):
             a=a+1
         
     #Shift Kernel
-    kk = np.roll(kk,-73, axis=0)
-    kk = np.roll(kk,-73, axis=1)
+    kk = np.roll(kk,-int((height+2)/2), axis=0)
+    kk = np.roll(kk,-int((height+2)/2), axis=1)
     fft = np.fft.fft2(kk)
 
     n1 = int(height/4)

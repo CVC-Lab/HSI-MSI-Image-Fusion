@@ -70,7 +70,8 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
 
     ratio = round(N1/n1) # downsampling ratio
 
-    I2 = np.array((range(0,N1,ratio)))
+    # I2 = np.array((range(0,N1,ratio)))
+    I2 = np.array((range(1,N1,ratio)))
     # print(I2.shape)
     # I2 = np.array((range(N1)))
     
@@ -78,7 +79,8 @@ def BGLRF_main(Y,Z,alpha,beta,radius):
     I2 = np.reshape(I2,(1,n2))
     I2 = np.repeat(I2,n2,axis=0)
     I2 = np.reshape(I2,(n1*n2,1))
-    J2 = np.array(range(0,N2,ratio))
+    # J2 = np.array(range(0,N2,ratio))
+    J2 = np.array(range(1,N2,ratio))
     J2 = np.reshape(J2,(n1,1))
     J2 = np.repeat(J2,n1,axis=0)
     I2 = I2.astype(int)

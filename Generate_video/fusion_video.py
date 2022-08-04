@@ -60,13 +60,17 @@ msi_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/De
 sri_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/sri_gt'
 
 # for i in range(len(os.listdir('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/hsi'))):
-for i in range(14, 28):
+# for i in range(17, 28):
+for i in 20,21,22,23:
     print("Frame",i+1)
     hsi = cv2.imread(os.path.join(hsi_folder, 'frame%d.jpg' %i))
     msi = cv2.imread(os.path.join(msi_folder, 'frame%d.jpg' %i))
     sri = cv2.imread(os.path.join(sri_folder, 'frame%d.jpg' %i))
     msi = cv2.cvtColor(msi, cv2.COLOR_BGR2GRAY)
     msi = msi.reshape((msi.shape[0],msi.shape[1],1))
+
+    # plt.imshow(msi)
+    # plt.show()
     # print(msi)
     # msi = msi/np.max(msi)
     msi = msi/255
@@ -80,10 +84,16 @@ for i in range(14, 28):
 
     print(denoised_hsi.shape)
     print(msi.shape)
-    print(type(denoised_hsi))
-    print(type(msi))
+    # print(type(denoised_hsi))
+    # print(np.max(msi))
     # denoised_hsi = np.round(denoised_hsi*255)
     # denoised_hsi = denoised_hsi.astype(np.uint8)
+
+    # plt.imshow(sri)
+    # plt.show()
+
+    # plt.imshow(hsi)
+    # plt.show()
 
     # plt.imshow(msi)
     # plt.show()
@@ -93,7 +103,7 @@ for i in range(14, 28):
     quality_assessment(sri,SRI_fused,0,1/4)
 
     # SRI_fused = SRI_fused.T
-    SRI_fused = np.reshape(SRI_fused, (msi.shape[1],msi.shape[0],3))
+    SRI_fused = np.reshape(SRI_fused, (msi.shape[0],msi.shape[1],3))
 
    
     # SRI_fused = cv2.rotate(SRI_fused, cv2.ROTATE_90_CLOCKWISE)
@@ -101,7 +111,7 @@ for i in range(14, 28):
     # plt.imshow(SRI_fused)
     # plt.show()
 
-    SRI_final = np.zeros((144,144,3))
+    SRI_final = np.zeros((sri.shape[0],sri.shape[1],3))
     SRI_final[:,:,0] = SRI_fused[:,:,0].T
     SRI_final[:,:,1] = SRI_fused[:,:,1].T
     SRI_final[:,:,2] = SRI_fused[:,:,2].T
@@ -113,7 +123,7 @@ for i in range(14, 28):
     # SRI_fused = np.round(SRI_fused*255)
     # SRI_fused = SRI_fused.astype(np.uint8)
 
-    # plt.imshow(SRI_fused[:,:,:])
+    # plt.imshow(SRI_fused)
     # plt.show()
 
     SRI_fused = SRI_final
@@ -123,7 +133,7 @@ for i in range(14, 28):
     # SRI_fused = cv2.flip(SRI_fused, 1)
     
 
-    cv2.imwrite('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/bmx/fused/frame%d.jpg' %i, SRI_fused)
+    cv2.imwrite('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/fused/frame%d.jpg' %i, SRI_fused)
 
     # SRI_fused = np.reshape(SRI_fused, (msi.shape[0],msi.shape[1],3))
     # cv2.imshow(SRI_fused)
@@ -132,10 +142,10 @@ for i in range(14, 28):
 
 # cv2.destroyAllWindows() 
 
-video_name = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/Videos/fused/bmx.avi'
-image_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/bmx/fused'
+video_name = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/Videos/fused/hummingbird.avi'
+image_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/fused'
 
-generate_video(video_name, image_folder)
+# generate_video(video_name, image_folder)
 
 
 

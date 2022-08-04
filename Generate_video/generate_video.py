@@ -48,8 +48,8 @@ def generate_video(video_name, image_folder):
         
         
 
-        im_cropped = im[:,140:500]
-        # im_cropped = im[90:270,320:500]
+        # im_cropped = im[:,140:500]
+        im_cropped = im[90:270,320:500]
         im = im_cropped
 
         print(im.shape)
@@ -66,10 +66,9 @@ def generate_video(video_name, image_folder):
         # Uncomment the lines below to denoise image
         # im = im/255
         # im, SNR_db = denoising(im)
-        # im, _ = add_noise(im, 20)
+        # im, _ = add_noise(im, 10)
         # plt.imshow(im)
-        # plt.show()
-        
+        # plt.show()        
         # im = np.round(im*255)
         # im = im.astype(np.uint8)
 
