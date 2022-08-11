@@ -21,6 +21,8 @@ SRI, hsi,msi = generation()
 # plt.imshow(SRI[:,:,10])
 # plt.show()
 
+print(SRI.shape)
+
 # np.save("SRI_fused", SRI_fused)
 SRI_fused = np.load("SRI_fused.npy")
 

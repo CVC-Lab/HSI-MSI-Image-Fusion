@@ -1,5 +1,9 @@
 import numpy as np
 from sklearn.metrics import mean_squared_error
+import sys
+from math import acos
+from img_qi import img_qi
+import sewar.full_ref as sf
 # from codes.hyperspectral_image_processing.quality_metrics.SpectAngMapper import SpectAngMapper
 # from codes.hyperspectral_image_processing.quality_metrics.img_qi import img_qi
 # from codes.hyperspectral_image_processing.quality_metrics.cal_ssim import cal_ssim
@@ -85,12 +89,33 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     print("RMSE", rmse)
 
     # ERGAS
-    # mean_y = np.sum(np.sum(y, 0), 1)/n_samples
-    # ergas = 100*ratio_ergas*np.sqrt(np.sum((rmse_per_band / mean_y)**2)/n_bands)
+    mean_y = np.sum(y, axis =(0,1))/n_samples
+    # print(mean_y.shape)
+    ergas = 100*ratio_ergas*np.sqrt(np.sum((rmse_per_band / mean_y)**2)/n_bands)
+    # ergas = sf.ergas(ground_truth, estimated, ratio_ergas)
+    print("ERGAS", ergas)
 
     # # SAM
     # sam= SpectAngMapper( ground_truth, estimated )
     # sam=sam*180/np.pi
+
+    eps = sys.float_info.epsilon
+    tmp = (np.sum(ground_truth * estimated,axis=2) + eps) / (np.sqrt(np.sum(ground_truth**2,axis=2)) + eps) / (np.sqrt(np.sum(estimated**2,axis=2)) + eps)
+
+    # print(tmp.shape)
+    tmp = np.reshape(tmp, (tmp.shape[0]*tmp.shape[1]))
+    arccos= []
+    for i in range(tmp.size):
+        arccos.append(acos(tmp[i]))
+    
+    sam = np.real(arccos)
+    sam = np.mean(sam)
+    sam=sam*180/np.pi
+    # sam = sf.sam(ground_truth, estimated)
+    # sam = sam*180/np.pi
+
+    print("SAM", sam)
+
 
     # num = np.sum(x * y, 2)
     # den = np.sqrt(sum(x**2, 2) * np.sum(y**2, 2))
@@ -102,7 +127,8 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     # for idx1 in range(n_bands):
     #     q_band[idx1]=img_qi(ground_truth[:,:,idx1], estimated[:,:,idx1].T, 32)
     # uiqi = np.mean(q_band)
-    # print(uiqi)
+    uiqi = sf.uqi(ground_truth, estimated)
+    print("UIQI", uiqi)
 
     # ssim = cal_ssim(ground_truth, estimated,0,0)
     # DD = np.linalg.norm(ground_truth[:]-estimated[:],1)/ground_truth.size
@@ -111,6 +137,9 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     # psnr=csnr(ground_truth, estimated,0,0)
     s = 10 * np.log10(255**2/mse)
     print("PSNR ", s)
+
+    # s = sf.psnr(ground_truth, estimated)
+    # print("PSNR ", s)
 
     # return psnr, rmse, ergas, sam, uiqi, ssim, DD, CCS
     return

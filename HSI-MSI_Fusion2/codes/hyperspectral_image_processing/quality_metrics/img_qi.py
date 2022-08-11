@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as scp
+from scipy import signal as sp
 
 def img_qi(img1, img2, block_size=8):
     # %========================================================================
@@ -87,7 +88,7 @@ def img_qi(img1, img2, block_size=8):
     img2_sq = img2 * img2
     img12 = img1 * img2
 
-    img1_sum = scp.signal.convolve(sum2_filter, img1, mode='valid')
+    img1_sum = sp.convolve(sum2_filter, img1, mode='valid')
     img2_sum = scp.signal.convolve(sum2_filter, img2, mode='valid')
     img1_sq_sum = scp.signal.convolve(sum2_filter, img1_sq, mode='valid')
     img2_sq_sum = scp.signal.convolve(sum2_filter, img2_sq, mode='valid')

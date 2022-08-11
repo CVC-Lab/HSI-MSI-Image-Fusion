@@ -3,6 +3,7 @@ import cv2
 import sys
 import warnings
 from generate_hsi import generate_hsi
+from generate_hsi import createnewbands
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -34,12 +35,12 @@ def generate_video(video_name, image_folder):
   
     # video = cv2.VideoWriter(video_name, 0, 5, (width, height)) 
     # video = cv2.VideoWriter(video_name, 0, 5, (height, height)) 
-    # video = cv2.VideoWriter(video_name, 0, 5, (144, 144)) 
+    video = cv2.VideoWriter(video_name, 0, 5, (144, 144)) 
 
     #Uncomment while generating lower resolution video
     #video = cv2.VideoWriter(video_name, 0, 5, (int(width/4), int(height/4))) 
     # video = cv2.VideoWriter(video_name, 0, 5, (int(height/4), int(height/4))) 
-    video = cv2.VideoWriter(video_name, 0, 5, (36, 36)) 
+    # video = cv2.VideoWriter(video_name, 0, 5, (36, 36)) 
   
     # Appending the images to the video one by one
     for image in images: 
@@ -80,7 +81,8 @@ def generate_video(video_name, image_folder):
         #Uncomment the line below to generate lower resolution image
         # im = generate_hsi(im, height, width, layers)
         # im = generate_hsi(im, height, height, layers)
-        im = generate_hsi(im, 144, 144, layers)
+        # im = generate_hsi(im, 144, 144, layers)
+        im = createnewbands(im, 144, 144, layers)
         plt.imshow(im)
         plt.show()
 

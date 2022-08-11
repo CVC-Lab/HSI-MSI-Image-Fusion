@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
+import scipy.io
+import cv2
+from scipy.interpolate import CubicSpline
 
 import sys
 import warnings
@@ -81,4 +84,72 @@ def generate_hsi(image, height, width, layers):
     #print(type(hsi))
     return hsi
 
+def createnewbands(image, height, width, layers):
+    
+    mat2 = scipy.io.loadmat("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/simulation/Landsat_TM5.mat")
+    
+    S1 = mat2["blue"]
+    S2 = mat2["green"]
+    S3 = mat2["red"]
+    S4 = mat2["nir"]
+    S5 = mat2["swir1"]
+    S6 = mat2["swir2"]
+    
+    S = [S1,S2,S3,S4,S5,S6]
 
+    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # (thresh, bwimage) = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+    # plt.imshow(bwimage)
+    # plt.show
+
+    image = image/255
+    sri,a = denoising(image)
+    sri = sri[0:height-1,0:width-1,:]
+
+    wave = np.linspace(400,2500, num=3)
+    # wave = np.delete(wave,bands_removed[:]-1)
+
+    P3 = np.zeros((3,6))
+    
+    for i in range(6):
+        s = S[i]
+        temp1 = s[:,0]
+        temp2 = s[:,1]
+        ind1 = np.where(wave>temp1[0])
+        inds1 = ind1[0]
+        inds1 = inds1[0]
+        ind2 = np.where(wave<temp1[-1])
+        inds2 = ind2[-1]
+        inds2 = inds2[-1]
+
+        x = scipy.interpolate.CubicSpline(temp1,temp2)
+        yy = x(wave[inds1:inds2+1])
+        
+        P3[inds1:inds2+1,i] = yy
+        P3[:,i] = P3[:,i]/np.sum(P3[:,i])
+
+    sri2 = np.zeros((height*height,220))
+    
+    for i in range(3):
+        sri2[:,i]= np.reshape(sri[:,:,i].T,(height*height))
+    msi = np.matmul(sri2,P3)
+    msi = np.reshape(msi,(height,height,6))
+    for i in range(6):
+        msi[:,:,i] = msi[:,:,i].T
+
+    hyp = np.zeros((height,height,9))
+    hyp[:,:,0] = image[:,:,0]
+    hyp[:,:,1] = image[:,:,1]
+    hyp[:,:,2] = image[:,:,2]
+    hyp[:,:,3] = msi[:,:,0]
+    hyp[:,:,4] = msi[:,:,1]
+    hyp[:,:,5] = msi[:,:,2]
+    hyp[:,:,6] = msi[:,:,3]
+    hyp[:,:,7] = msi[:,:,4]
+    hyp[:,:,8] = msi[:,:,5]
+
+    plt.imshow(msi[:,:,:])
+    plt.show()
+
+    plt.imshow(hyp[:,:,:])
+    plt.show()
