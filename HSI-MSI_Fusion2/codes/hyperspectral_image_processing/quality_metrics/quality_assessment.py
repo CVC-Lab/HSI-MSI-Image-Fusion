@@ -4,12 +4,16 @@ import sys
 from math import acos
 from img_qi import img_qi
 import sewar.full_ref as sf
+import cal_ssim 
+import SpectAngMapper
 # from codes.hyperspectral_image_processing.quality_metrics.SpectAngMapper import SpectAngMapper
 # from codes.hyperspectral_image_processing.quality_metrics.img_qi import img_qi
 # from codes.hyperspectral_image_processing.quality_metrics.cal_ssim import cal_ssim
 # from codes.hyperspectral_image_processing.quality_metrics.CC import CC
 # from codes.hyperspectral_image_processing.quality_metrics.csnr import csnr
 
+
+# credits to https://github.com/up42/image-similarity-measures/blob/0e9227e2bfa0fe3c250f75fcfeda657ff1857158/image_similarity_measures/quality_metrics.py#L14
 def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     # quality_assessment - Computes a number of quality indices from the remote sensing literature,
     #    namely the RMSE, ERGAS, SAM and UIQI indices. UIQI is computed using
@@ -89,31 +93,33 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     print("RMSE", rmse)
 
     # ERGAS
-    mean_y = np.sum(y, axis =(0,1))/n_samples
+    # mean_y = np.sum(y, axis =(0,1))/n_samples
+    mean_y = np.sum(np.sum(y, 0), 0)/n_samples
     # print(mean_y.shape)
-    ergas = 100*ratio_ergas*np.sqrt(np.sum((rmse_per_band / mean_y)**2)/n_bands)
+    ergas = 100*ratio_ergas*np.sqrt(np.sum((rmse_per_band / mean_y)**2)/(n_bands))
     # ergas = sf.ergas(ground_truth, estimated, ratio_ergas)
     print("ERGAS", ergas)
 
-    # # SAM
-    # sam= SpectAngMapper( ground_truth, estimated )
-    # sam=sam*180/np.pi
+    # # # SAM
+    # # sam= SpectAngMapper( ground_truth, estimated )
+    # # sam=sam*180/np.pi
 
-    eps = sys.float_info.epsilon
-    tmp = (np.sum(ground_truth * estimated,axis=2) + eps) / (np.sqrt(np.sum(ground_truth**2,axis=2)) + eps) / (np.sqrt(np.sum(estimated**2,axis=2)) + eps)
+    # eps = sys.float_info.epsilon
+    # tmp = (np.sum(ground_truth * estimated,axis=2) + eps) / (np.sqrt(np.sum(ground_truth**2,axis=2)) + eps) / (np.sqrt(np.sum(estimated**2,axis=2)) + eps)
 
-    # print(tmp.shape)
-    tmp = np.reshape(tmp, (tmp.shape[0]*tmp.shape[1]))
-    arccos= []
-    for i in range(tmp.size):
-        arccos.append(acos(tmp[i]))
+    # # print(tmp.shape)
+    # tmp = np.reshape(tmp, (tmp.shape[0]*tmp.shape[1]))
+    # arccos= []
+    # for i in range(tmp.size):
+    #     arccos.append(acos(tmp[i]))
     
-    sam = np.real(arccos)
-    sam = np.mean(sam)
-    sam=sam*180/np.pi
-    # sam = sf.sam(ground_truth, estimated)
-    # sam = sam*180/np.pi
+    # sam = np.real(arccos)
+    # sam = np.mean(sam)
+    # sam=sam*180/np.pi
+    # # sam = sf.sam(ground_truth, estimated)
+    # # sam = sam*180/np.pi
 
+    sam = SpectAngMapper.sam(ground_truth, estimated)
     print("SAM", sam)
 
 
@@ -130,7 +136,9 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     uiqi = sf.uqi(ground_truth, estimated)
     print("UIQI", uiqi)
 
-    # ssim = cal_ssim(ground_truth, estimated,0,0)
+    # ssim = sf.ssim(ground_truth, estimated)
+    ssim = cal_ssim.ssim(ground_truth, estimated, 9604)
+    print("SSIM", ssim)
     # DD = np.linalg.norm(ground_truth[:]-estimated[:],1)/ground_truth.size
     # CCS = CC(ground_truth,estimated)
     # CCS = np.mean(CCS)

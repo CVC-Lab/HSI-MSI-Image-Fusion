@@ -18,3 +18,5 @@ You need streamlit installed, which you can do with the following command
 ```
 pip install streamlit
 ```
+
+For running the code on any square dataset, use the the code in HSI-MSI_Fusion2.

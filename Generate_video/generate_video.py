@@ -7,8 +7,8 @@ from generate_hsi import createnewbands
 import numpy as np
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion/codes/hyperspectral_image_processing/denoise')
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion/codes/hyperspectral_image_processing/simulation')
+sys.path.insert(0, '../HSI-MSI_Fusion2/codes/hyperspectral_image_processing/denoise')
+sys.path.insert(0, '../HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation')
 warnings.filterwarnings('ignore')
 
 from denoising import denoising
@@ -34,8 +34,8 @@ def generate_video(video_name, image_folder):
     print(frame.shape)
   
     # video = cv2.VideoWriter(video_name, 0, 5, (width, height)) 
-    # video = cv2.VideoWriter(video_name, 0, 5, (height, height)) 
-    video = cv2.VideoWriter(video_name, 0, 5, (144, 144)) 
+    video = cv2.VideoWriter(video_name, 0, 5, (height, height)) 
+    # video = cv2.VideoWriter(video_name, 0, 5, (144, 144)) 
 
     #Uncomment while generating lower resolution video
     #video = cv2.VideoWriter(video_name, 0, 5, (int(width/4), int(height/4))) 
@@ -49,27 +49,27 @@ def generate_video(video_name, image_folder):
         
         
 
-        # im_cropped = im[:,140:500]
-        im_cropped = im[90:270,320:500]
+        im_cropped = im[:,140:500]
+        # im_cropped = im[90:270,320:500]
         im = im_cropped
 
-        print(im.shape)
+        
 
         # im = cv2.resize(im, (36, 36),interpolation = cv2.INTER_NEAREST)
-        im = cv2.resize(im, (144, 144),interpolation = cv2.INTER_NEAREST)
+        # im = cv2.resize(im, (144, 144),interpolation = cv2.INTER_NEAREST)
         # im = cv2.resize(im, (36, 36),interpolation = cv2.INTER_CUBIC)
-
+        print(im.shape)
         # plt.imshow(im)
         # plt.show()
         
-        # im, noise = add_noise(im, 40)
+        im, noise = add_noise(im, 10)
 
         # Uncomment the lines below to denoise image
         # im = im/255
         # im, SNR_db = denoising(im)
-        # im, _ = add_noise(im, 10)
-        # plt.imshow(im)
-        # plt.show()        
+        # im, _ = add_noise(im, 20)
+        plt.imshow(im)
+        plt.show()        
         # im = np.round(im*255)
         # im = im.astype(np.uint8)
 
@@ -82,11 +82,11 @@ def generate_video(video_name, image_folder):
         # im = generate_hsi(im, height, width, layers)
         # im = generate_hsi(im, height, height, layers)
         # im = generate_hsi(im, 144, 144, layers)
-        im = createnewbands(im, 144, 144, layers)
-        plt.imshow(im)
-        plt.show()
+        # im = createnewbands(im, 144, 144, layers)
+        # plt.imshow(im)
+        # plt.show()
 
-        # # Uncomment the lines below to generate msi colored
+        # Uncomment the lines below to generate msi colored
         # im = im/255
         # im,SNR_db = denoising(im)
         # im, noise = add_noise(im, 60)

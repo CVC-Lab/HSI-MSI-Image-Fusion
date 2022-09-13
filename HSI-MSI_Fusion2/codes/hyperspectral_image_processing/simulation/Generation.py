@@ -1,3 +1,4 @@
+import pwd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
@@ -7,8 +8,10 @@ from scipy.interpolate import CubicSpline
 import cv2
 import scipy.io
 
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/denoise')
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation')
+sys.path.insert(0, '../denoise')
+sys.path.insert(0, '../simulation')
+sys.path.insert(0, '../test_data')
+
 warnings.filterwarnings('ignore')
 
 from denoising import denoising
@@ -16,12 +19,14 @@ from add_noise import add_noise
 from MSG import matlab_style_gauss2D
 
 def generation():
-    filename ='/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/test_data/indian_pines.mat'
+    pwd
+    #filename ='../test_data/indian_pines.mat'
+    filename ='./codes/hyperspectral_image_processing/test_data/indian_pines.mat'
     mat = scipy.io.loadmat(filename)
     bands_removed = mat["bands_removed"]
     indian_pines_c = mat["indian_pines_corrected"]
     scaling = mat["scaling"]
-    
+    print(scaling)
     sri = indian_pines_c/scaling
 
     # plt.imshow(indian_pines_c[:,:,10])
@@ -37,11 +42,12 @@ def generation():
     # cv2.imwrite("Denoised SRI", sri_image[:,:,10])
     # cv2.imwrite("Original image", indian_pines_c[:,:,10])
 
+    N1 = 144
+    N2 = 144
+    N3 = 200
 
-
-
-    sri = sri[0:144,0:144,:]
-    mat2 = scipy.io.loadmat("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/simulation/Landsat_TM5.mat")
+    sri = sri[0:N1,0:N2,:]
+    mat2 = scipy.io.loadmat("./codes/hyperspectral_image_processing/simulation/Landsat_TM5.mat")
     
     S1 = mat2["blue"]
     S2 = mat2["green"]
@@ -52,9 +58,8 @@ def generation():
     
     S = [S1,S2,S3,S4,S5,S6]
     
-    N1 = 144
-    N2 = 144
-    N3 = 200
+    n1 = 36
+    n2 = 36
     n3 = 6
     P3 = np.zeros((N3,n3))
     
@@ -96,8 +101,8 @@ def generation():
     k[0:9,0:9] = k0
     
     center = np.zeros((2,1))
-    center[0]=144/2+1
-    center[1]=144/2+1
+    center[0]=N1/2+1
+    center[1]=N2/2+1
     
     I = np.linspace(center[0]-radius,center[1]+radius,13)
     I2 = np.linspace(center[0]-radius,center[1]+radius,13)
@@ -113,9 +118,9 @@ def generation():
     arr = arr.astype(int)
     I2 = I2.astype(int)
     J = J.astype(int)
-    inds = np.ravel_multi_index(arr,(143,143))
+    inds = np.ravel_multi_index(arr,(N1-1,N2-1))
     a=0
-    kk = np.zeros((144,144))
+    kk = np.zeros((N1,N2))
     for i in range(13):
         for j in range(13):
             
@@ -123,12 +128,10 @@ def generation():
             a=a+1
         
     #Shift Kernel
-    kk = np.roll(kk,-73, axis=0)
-    kk = np.roll(kk,-73, axis=1)
+    kk = np.roll(kk,-int((N1+2)/2), axis=0)
+    kk = np.roll(kk,-int((N2+2)/2), axis=1)
     fft = np.fft.fft2(kk)
     
-    n1 = 36
-    n2 = 36
     hsi = np.zeros((n1,n2,N3))
     
     for band in range(N3):

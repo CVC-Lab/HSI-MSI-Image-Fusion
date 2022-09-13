@@ -6,10 +6,10 @@ import os
 from generate_video import generate_video
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/denoise')
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation')
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/fusion')
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/quality_metrics')
+sys.path.insert(0, '../HSI-MSI_Fusion2/codes/hyperspectral_image_processing/denoise')
+sys.path.insert(0, '../HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation')
+sys.path.insert(0, '../HSI-MSI_Fusion2/codes/hyperspectral_image_processing/fusion')
+sys.path.insert(0, '../HSI-MSI_Fusion2/codes/hyperspectral_image_processing/quality_metrics')
 warnings.filterwarnings('ignore')
 
 from BGLRF_main import BGLRF_main
@@ -20,15 +20,15 @@ from quality_assessment import quality_assessment
 # hsi_vid = cv2.VideoCapture('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/Videos/low_resolution_color/bmx.avi')
 # msi_vid = cv2.VideoCapture('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/Videos/grayscale/bmx.avi')
 
-hsi_vid = cv2.VideoCapture('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/Videos/low_resolution_color/hummingbird.avi')
-msi_vid = cv2.VideoCapture('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/Videos/grayscale/hummingbird.avi')
-sri_vid = cv2.VideoCapture('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/Videos/originals/hummingbird.avi')
+hsi_vid = cv2.VideoCapture('./Videos/low_resolution_color/hummingbird.avi')
+msi_vid = cv2.VideoCapture('./Videos/grayscale/hummingbird.avi')
+sri_vid = cv2.VideoCapture('./Videos/originals/hummingbird.avi')
 
 hsi_success, hsi_image = hsi_vid.read()
 count = 0
 while hsi_success:
 #   cv2.imwrite("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/bmx/hsi/frame%d.jpg" % count, hsi_image)     # save frame as JPEG file      
-  cv2.imwrite("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/hsi/frame%d.jpg" % count, hsi_image)     # save frame as JPEG file      
+  cv2.imwrite("./fused_frames/hummingbird/hsi/frame%d.jpg" % count, hsi_image)     # save frame as JPEG file      
   hsi_success,hsi_image = hsi_vid.read()
   #print('Read a new frame: ', hsi_success)
   count += 1
@@ -37,7 +37,7 @@ msi_success, msi_image = msi_vid.read()
 count = 0
 while msi_success:
 #   cv2.imwrite("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/bmx/msi/frame%d.jpg" % count, msi_image)     # save frame as JPEG file      
-  cv2.imwrite("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/msi/frame%d.jpg" % count, msi_image)     # save frame as JPEG file      
+  cv2.imwrite("./fused_frames/hummingbird/msi/frame%d.jpg" % count, msi_image)     # save frame as JPEG file      
   msi_success,msi_image = msi_vid.read()
   #print('Read a new frame: ', msi_success)
   count += 1
@@ -46,7 +46,7 @@ sri_success, sri_image = sri_vid.read()
 count = 0
 while sri_success:
 #   cv2.imwrite("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/bmx/msi/frame%d.jpg" % count, msi_image)     # save frame as JPEG file      
-  cv2.imwrite("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/sri_gt/frame%d.jpg" % count, sri_image)     # save frame as JPEG file      
+  cv2.imwrite("./fused_frames/hummingbird/sri_gt/frame%d.jpg" % count, sri_image)     # save frame as JPEG file      
   sri_success,sri_image = sri_vid.read()
   #print('Read a new frame: ', msi_success)
   count += 1
@@ -55,19 +55,19 @@ while sri_success:
 # msi_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/bmx/msi'
 # for i in range(len(os.listdir('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/bmx/hsi'))):
 
-hsi_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/hsi'
-msi_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/msi'
-sri_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/sri_gt'
+hsi_folder = './fused_frames/hummingbird/hsi'
+msi_folder = './fused_frames/hummingbird/msi'
+sri_folder = './fused_frames/hummingbird/sri_gt'
 
 # for i in range(len(os.listdir('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/hsi'))):
 # for i in range(17, 28):
-for i in 20,21,22,23:
+for i in 0,2,6,8:
     print("Frame",i+1)
     hsi = cv2.imread(os.path.join(hsi_folder, 'frame%d.jpg' %i))
     msi = cv2.imread(os.path.join(msi_folder, 'frame%d.jpg' %i))
     sri = cv2.imread(os.path.join(sri_folder, 'frame%d.jpg' %i))
-    msi = cv2.cvtColor(msi, cv2.COLOR_BGR2GRAY)
-    msi = msi.reshape((msi.shape[0],msi.shape[1],1))
+    # msi = cv2.cvtColor(msi, cv2.COLOR_BGR2GRAY)
+    # msi = msi.reshape((msi.shape[0],msi.shape[1],1))
 
     # plt.imshow(msi)
     # plt.show()
@@ -133,7 +133,7 @@ for i in 20,21,22,23:
     # SRI_fused = cv2.flip(SRI_fused, 1)
     
 
-    cv2.imwrite('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/fused/frame%d.jpg' %i, SRI_fused)
+    cv2.imwrite('./fused_frames/hummingbird/fused/frame%d.jpg' %i, SRI_fused)
 
     # SRI_fused = np.reshape(SRI_fused, (msi.shape[0],msi.shape[1],3))
     # cv2.imshow(SRI_fused)
@@ -142,8 +142,8 @@ for i in 20,21,22,23:
 
 # cv2.destroyAllWindows() 
 
-video_name = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/Videos/fused/hummingbird.avi'
-image_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/fused'
+video_name = './Videos/fused/hummingbird.avi'
+image_folder = './fused_frames/hummingbird/fused'
 
 # generate_video(video_name, image_folder)
 
