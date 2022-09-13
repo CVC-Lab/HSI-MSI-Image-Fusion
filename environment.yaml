@@ -1,0 +1,11 @@
+name: hsi
+channels:
+  - pytorch
+  - default
+dependencies:
+  - python=3.8
+  - pytorch
+  - torchvision
+  - pip
+  - pip:
+    - -r requirements.txt

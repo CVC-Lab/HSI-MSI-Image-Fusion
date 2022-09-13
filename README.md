@@ -1,6 +1,11 @@
 # HSI-MSI-Image-Fusion
 Hyperspectral-Multispectral Image Fusion
 
+#### Installation
+1. ```conda create -f environment.yaml```
+2. ```conda activate hsi```
+
+
 #### CVC_Tianming
 Original MATLAB codes, description given in overview.pdf. Fusion code in the folder hyperspectral_image_processing.m
 

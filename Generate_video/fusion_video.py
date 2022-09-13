@@ -61,13 +61,13 @@ sri_folder = '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/De
 
 # for i in range(len(os.listdir('/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/Generate_video/fused_frames/hummingbird/hsi'))):
 # for i in range(17, 28):
-for i in 20,21,22,23:
+for i in 0,2,6,8:
     print("Frame",i+1)
     hsi = cv2.imread(os.path.join(hsi_folder, 'frame%d.jpg' %i))
     msi = cv2.imread(os.path.join(msi_folder, 'frame%d.jpg' %i))
     sri = cv2.imread(os.path.join(sri_folder, 'frame%d.jpg' %i))
-    msi = cv2.cvtColor(msi, cv2.COLOR_BGR2GRAY)
-    msi = msi.reshape((msi.shape[0],msi.shape[1],1))
+    # msi = cv2.cvtColor(msi, cv2.COLOR_BGR2GRAY)
+    # msi = msi.reshape((msi.shape[0],msi.shape[1],1))
 
     # plt.imshow(msi)
     # plt.show()
