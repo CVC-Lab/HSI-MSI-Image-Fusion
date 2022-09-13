@@ -2,7 +2,7 @@
 Hyperspectral-Multispectral Image Fusion
 
 #### Installation
-1. ```conda create -f environment.yaml```
+1. ```conda env create -f environment.yaml```
 2. ```conda activate hsi```
 
 

@@ -11,9 +11,9 @@ sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook A
 sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation')
 warnings.filterwarnings('ignore')
 
-from denoising import denoising
-from add_noise import add_noise
-from MSG import matlab_style_gauss2D
+from ..denoise.denoising import denoising
+from .add_noise import add_noise
+from .MSG import matlab_style_gauss2D
 
 def generation():
     filename ='/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/test_data/indian_pines.mat'

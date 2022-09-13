@@ -2,10 +2,10 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 import sys
 from math import acos
-from img_qi import img_qi
+from .img_qi import img_qi
 import sewar.full_ref as sf
-import cal_ssim 
-import SpectAngMapper
+from . import cal_ssim
+from . import SpectAngMapper
 # from codes.hyperspectral_image_processing.quality_metrics.SpectAngMapper import SpectAngMapper
 # from codes.hyperspectral_image_processing.quality_metrics.img_qi import img_qi
 # from codes.hyperspectral_image_processing.quality_metrics.cal_ssim import cal_ssim
