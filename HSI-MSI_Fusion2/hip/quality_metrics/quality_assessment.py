@@ -68,8 +68,8 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     n_bands = sz_x[2]
     n_samples = sz_x[0]*sz_x[1]
 
-    print(x.shape)
-    print(y.shape)
+    # print(x.shape)
+    # print(y.shape)
 
     # RMSE
     # aux = np.sum(np.sum((x - y)**2, axis=0), axis=1)/n_samples

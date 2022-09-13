@@ -6,22 +6,33 @@ import warnings
 from scipy.interpolate import CubicSpline
 import cv2
 import scipy.io
+import os
 
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/denoise')
-sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation')
+
+# sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/denoise')
+# sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation')
 warnings.filterwarnings('ignore')
 
 from ..denoise.denoising import denoising
 from .add_noise import add_noise
 from .MSG import matlab_style_gauss2D
 
-def generation():
-    filename ='/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/test_data/indian_pines.mat'
-    mat = scipy.io.loadmat(filename)
+def generate_indian_pines_data(dataset_dir):
+    """
+    Inputs:
+    ------
+    filename: str
+    filepath to indian_pines.mat
+
+    Returns:
+    -------
+    sri, hsi, msi: scipy matrix
+    """
+    mat = scipy.io.loadmat(os.path.join(dataset_dir, "test_data/indian_pines.mat"))
     bands_removed = mat["bands_removed"]
     indian_pines_c = mat["indian_pines_corrected"]
     scaling = mat["scaling"]
-    print(scaling)
+    # print(scaling)
     sri = indian_pines_c/scaling
 
     # plt.imshow(indian_pines_c[:,:,10])
@@ -42,7 +53,7 @@ def generation():
     N3 = 200
 
     sri = sri[0:N1,0:N2,:]
-    mat2 = scipy.io.loadmat("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion original/codes/hyperspectral_image_processing/simulation/Landsat_TM5.mat")
+    mat2 = scipy.io.loadmat(os.path.join(dataset_dir, "Landsat_TM5.mat"))
     
     S1 = mat2["blue"]
     S2 = mat2["green"]

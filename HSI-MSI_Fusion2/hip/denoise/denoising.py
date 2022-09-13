@@ -30,12 +30,12 @@ def denoising(X,mask=None):
         if mask == None:
             mask = list(range(x0.shape[0]))
         x = x0[mask,0]
-        Y[:,:,0] = np.reshape(x,[rows,cols]);
+        Y[:,:,0] = np.reshape(x,[rows,cols])
         SNR_dB[0] = 20*np.log10(np.mean(x0)/np.mean((x0-np.reshape(Y[:,:,0],[-1,1]))**2)**0.5)
 
     else: 
         for i in range(bands):
-            print(str(i) + 'th band')
+            # print(str(i) + 'th band')
             x0 = np.reshape(X[:,:,i],[-1,1])
             if mask == None:
                 mask = list(range(x0.shape[0]))
@@ -48,11 +48,11 @@ def denoising(X,mask=None):
 
             x = x0[mask,0]
             A = A0[mask,:]
-            invAtA = np.linalg.pinv(A.T @ A);
+            invAtA = np.linalg.pinv(A.T @ A)
 
-            c = (invAtA) @ (A.T @ x);
+            c = (invAtA) @ (A.T @ x)
             temp = np.matmul(A0,c)
-            Y[:,:,i] = np.reshape(temp,[rows,cols]);
+            Y[:,:,i] = np.reshape(temp,[rows,cols])
             SNR_dB[i] = 20*np.log10(np.mean(x0)/np.mean((x0-np.reshape(Y[:,:,i],[-1,1]))**2)**0.5)
     
     return Y,SNR_dB
