@@ -7,10 +7,6 @@ from scipy.interpolate import CubicSpline
 import cv2
 import scipy.io
 import os
-
-
-# sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/denoise')
-# sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI Fusion/codes/hyperspectral_image_processing/simulation')
 warnings.filterwarnings('ignore')
 
 from ..denoise.denoising import denoising
