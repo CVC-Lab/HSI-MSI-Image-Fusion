@@ -1,7 +1,5 @@
 from torch.utils.data import Dataset
-import h5py as hpy
 import scipy.io as sio
-import numpy as np
 import pdb
 
 class PaviaDataset(Dataset):
@@ -17,7 +15,7 @@ class PaviaDataset(Dataset):
         return self.data[idx]
 
 # gt = sio.loadmat("/Users/shubham1.bhardwaj/Documents/masters_coursework/3D_Prof_Chandrajit/HSI-MSI-Image-Fusion/hmi_fusion/datasets/data/PaviaUniversity/PaviaU_gt.mat")
-# gt shape - (610, 340)
-fpath = "/Users/shubham1.bhardwaj/Documents/masters_coursework/3D_Prof_Chandrajit/HSI-MSI-Image-Fusion/hmi_fusion/datasets/data/PaviaUniversity/Pavia.mat"
-tr = sio.loadmat(fpath)
-pdb.set_trace()
+# # gt shape - (610, 340)
+# fpath = "/Users/shubham1.bhardwaj/Documents/masters_coursework/3D_Prof_Chandrajit/HSI-MSI-Image-Fusion/hmi_fusion/datasets/data/PaviaUniversity/Pavia.mat"
+# tr = sio.loadmat(fpath)
+# pdb.set_trace()
