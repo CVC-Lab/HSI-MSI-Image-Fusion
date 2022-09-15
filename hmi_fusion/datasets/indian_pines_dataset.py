@@ -7,15 +7,21 @@ from ..models.hip.simulation.generation import generate_indian_pines_data
 
 # need to write local dataset dataloader
 
+def loadData(dataset_dir):
+    hsi, msi, sri = generate_indian_pines_data(dataset_dir)
+    data = [(hsi, msi, sri)]
+    return data
+
 class IndianPinesDataset(Dataset):
     def __init__(self, dataset_dir) -> None:
         super().__init__()
-        hsi, msi, sri = generate_indian_pines_data(dataset_dir)
-        self.data = [(hsi, msi, sri)]
+        self.data = loadData(dataset_dir)
 
     def __len__(self):
         return len(self.data)
-        
+
     def __getitem__(self, idx):
         # need to convert to Tensor
         return self.data[idx]
+
+# tensorflow dataset
