@@ -66,8 +66,14 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
     ergas = 100*ratio_ergas*np.sqrt(np.sum((rmse_per_band / mean_y)**2)/n_bands)
 
     # SAM
-    sam= SpectAngMapper( ground_truth, estimated )
-    sam=sam*180/np.pi
+    # spectral loss
+    nom_top = np.sum(np.multiply(x, y),0)
+    nom_pred = np.sqrt(np.sum(np.power(x, 2),0))
+    nom_true = np.sqrt(np.sum(np.power(y, 2),0))
+    nom_base = np.multiply(nom_pred, nom_true)
+    angle = np.arccos(np.divide(nom_top, (nom_base)))
+    angle = np.nan_to_num(angle)
+    sam = np.mean(angle)*180.0/3.14159
     # num = np.sum(x * y, 2)
     # den = np.sqrt(sum(x**2, 2) * np.sum(y**2, 2))
     # sam = np.sum(np.acosd(num / den))/(n_samples)

@@ -1,4 +1,3 @@
-
 from torch.utils.data import Dataset
 from PIL import Image
 import numpy as np
@@ -13,19 +12,26 @@ def load_ms_img(ms_path):
         ms_img.append(np.array(im))
     return np.moveaxis(np.array(ms_img), 0, -1)
 
-def load_data(dataset_dir):
+
+test_classes = ["balloons_ms", "cd_ms", "cloth_ms", "photo_and_face_ms", "thread_spools_ms"]
+
+
+def load_data(dataset_dir, mode):
     data =  []
-    dataset_dir = os.path.join(dataset_dir, "complete_ms_data")
+    dataset_dir = os.path.join(dataset_dir)
     classes = os.listdir(dataset_dir)
     class2id = {c: idx for idx, c in enumerate(classes)}
     for c in os.listdir(dataset_dir):
+        if mode == "test":
+            if c not in test_classes: continue
         c_path = os.path.join(dataset_dir, c, c)
+        if not os.path.isdir(c_path): continue
         ms_path = []
         rgb_path = None
         for im in os.listdir(c_path):
             if "_ms_" in im:
                 ms_path.append(os.path.join(c_path, im))
-            else:
+            elif im.endswith(".bmp"):
                 rgb_path = os.path.join(c_path, im)
         
         ms_img = load_ms_img(ms_path=ms_path)
@@ -35,9 +41,9 @@ def load_data(dataset_dir):
         
 
 class CAVEDataset(Dataset):
-    def __init__(self, dataset_dir) -> None:
+    def __init__(self, dataset_dir, mode="train") -> None:
         super().__init__()
-        self.classes, self.class2id, self.data = load_data(dataset_dir)
+        self.classes, self.class2id, self.data = load_data(dataset_dir, mode)
 
     def __len__(self):
         return len(self.data)
@@ -47,5 +53,5 @@ class CAVEDataset(Dataset):
         return self.data[idx]
 
 
-# dataset = CAVEDataset("./data/CAVE")
+# dataset = CAVEDataset("./data/CAVE", mode="train")
 # pdb.set_trace()
