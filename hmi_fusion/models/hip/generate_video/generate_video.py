@@ -7,8 +7,13 @@ from generate_hsi import createnewbands
 import numpy as np
 import matplotlib.pyplot as plt
 
+<<<<<<< HEAD:hmi_fusion/models/hip/generate_video/generate_video.py
 sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/denoise')
 sys.path.insert(0, '/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation')
+=======
+sys.path.insert(0, '../HSI-MSI_Fusion2/codes/hyperspectral_image_processing/denoise')
+sys.path.insert(0, '../HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation')
+>>>>>>> main:Generate_video/generate_video.py
 warnings.filterwarnings('ignore')
 
 from denoising import denoising

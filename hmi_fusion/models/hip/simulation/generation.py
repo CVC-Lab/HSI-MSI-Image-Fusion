@@ -1,3 +1,4 @@
+import pwd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
@@ -6,7 +7,15 @@ import warnings
 from scipy.interpolate import CubicSpline
 import cv2
 import scipy.io
+<<<<<<< HEAD:hmi_fusion/models/hip/simulation/generation.py
 import os
+=======
+
+sys.path.insert(0, '../denoise')
+sys.path.insert(0, '../simulation')
+sys.path.insert(0, '../test_data')
+
+>>>>>>> main:HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation/Generation.py
 warnings.filterwarnings('ignore')
 
 from ..denoise.denoising import denoising
@@ -20,6 +29,7 @@ def generate_indian_pines_data(dataset_dir):
     filename: str
     filepath to indian_pines.mat
 
+<<<<<<< HEAD:hmi_fusion/models/hip/simulation/generation.py
     Returns:
     -------
     sri, hsi, msi: scipy matrix
@@ -29,6 +39,17 @@ def generate_indian_pines_data(dataset_dir):
     indian_pines_c = mat["indian_pines_corrected"]
     scaling = mat["scaling"]
     # print(scaling)
+=======
+def generation():
+    pwd
+    #filename ='../test_data/indian_pines.mat'
+    filename ='./codes/hyperspectral_image_processing/test_data/indian_pines.mat'
+    mat = scipy.io.loadmat(filename)
+    bands_removed = mat["bands_removed"]
+    indian_pines_c = mat["indian_pines_corrected"]
+    scaling = mat["scaling"]
+    print(scaling)
+>>>>>>> main:HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation/Generation.py
     sri = indian_pines_c/scaling
 
     # plt.imshow(indian_pines_c[:,:,10])
@@ -49,7 +70,11 @@ def generate_indian_pines_data(dataset_dir):
     N3 = 200
 
     sri = sri[0:N1,0:N2,:]
+<<<<<<< HEAD:hmi_fusion/models/hip/simulation/generation.py
     mat2 = scipy.io.loadmat(os.path.join(dataset_dir, "Landsat_TM5.mat"))
+=======
+    mat2 = scipy.io.loadmat("./codes/hyperspectral_image_processing/simulation/Landsat_TM5.mat")
+>>>>>>> main:HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation/Generation.py
     
     S1 = mat2["blue"]
     S2 = mat2["green"]

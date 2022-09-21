@@ -4,8 +4,13 @@ import sys
 from math import acos
 from .img_qi import img_qi
 import sewar.full_ref as sf
+<<<<<<< HEAD:hmi_fusion/models/hip/quality_metrics/quality_assessment.py
 from . import cal_ssim
 from . import SpectAngMapper
+=======
+import cal_ssim 
+import SpectAngMapper
+>>>>>>> main:HSI-MSI_Fusion2/codes/hyperspectral_image_processing/quality_metrics/quality_assessment.py
 # from codes.hyperspectral_image_processing.quality_metrics.SpectAngMapper import SpectAngMapper
 # from codes.hyperspectral_image_processing.quality_metrics.img_qi import img_qi
 # from codes.hyperspectral_image_processing.quality_metrics.cal_ssim import cal_ssim
