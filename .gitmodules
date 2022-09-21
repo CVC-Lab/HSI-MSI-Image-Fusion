@@ -1,0 +1,6 @@
+[submodule "hmi_fusion/models/DHSIS"]
+	path = hmi_fusion/models/DHSIS
+	url = https://github.com/CVC-Lab/DHSIS.git
+[submodule "hmi_fusion/models/uSDN"]
+	path = hmi_fusion/models/uSDN
+	url = https://github.com/CVC-Lab/uSDN.git

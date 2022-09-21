@@ -1,0 +1,17 @@
+name: hsi
+channels:
+  - pytorch
+  - default
+  - conda-forge
+dependencies:
+  - python=3.8
+  - pytorch
+  - torchvision
+  - jupyter
+  - matplotlib
+  - opencv
+  - scikit-learn
+  - scikit-image
+  - pip
+  - pip:
+    - -r requirements.txt
