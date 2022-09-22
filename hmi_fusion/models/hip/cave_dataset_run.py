@@ -1,10 +1,10 @@
 import sys
 import warnings
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import pdb
 
-sys.path.insert(0, "/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/hmi_fusion/datasets")
+sys.path.insert(0, "/data/shubham/HSI-MSI-Image-Fusion/hmi_fusion/datasets")
 # sys.path.insert(0, './codes/hyperspectral_image_processing/denoise')
 # sys.path.insert(0, './codes/hyperspectral_image_processing/simulation')
 # sys.path.insert(0, './codes/hyperspectral_image_processing/fusion')
@@ -18,7 +18,7 @@ from hip.simulation.add_noise import add_noise
 from hip.fusion.bglrf_main import BGLRF_main
 from hip.quality_metrics.quality_assessment import quality_assessment
 
-classes, class2id, data = load_data("/Users/pronomabanerjee/Dropbox/My Mac (Pronoma’s MacBook Air)/Desktop/UT Austin/HSI-MSI-Image-Fusion/hmi_fusion/datasets/data/CAVE", "test")
+classes, class2id, data = load_data("/data/shubham/HSI-MSI-Image-Fusion/hmi_fusion/datasets/data/CAVE", "test")
 
 # denoised_hsi,SNR_dB = denoising(hsi)
 # # SRI_fused,K_est = BGLRF_main(denoised_hsi,msi,10,10,6)
@@ -46,8 +46,8 @@ for i in range(len(data)):
     denoised_hsi, SNR_dB = denoising(hsi)
     SRI_fused, K_est = BGLRF_main(denoised_hsi, msi, 10, 10, 6)
 
-    plt.imshow(SRI_fused[:,:,10])
-    plt.show()
+    # plt.imshow(SRI_fused[:,:,10])
+    # plt.show()
 
     quality_assessment(msi_denoised,SRI_fused,0,1/4)
 

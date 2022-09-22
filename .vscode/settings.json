@@ -8,5 +8,6 @@
         "./HSI-MSI_Fusion2/codes/hyperspectral_image_processing/denoise",
         "./HSI-MSI_Fusion2/codes/hyperspectral_image_processing/simulation",
         "./hmi_fusion/datasets"
-    ]
+    ],
+    "git.terminalAuthentication": true
 }
