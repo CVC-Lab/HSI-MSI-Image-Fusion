@@ -6,7 +6,7 @@ import torch
 from PIL import Image
 import scipy.io as sio
 import numpy as np
-from utils import psf2otf
+from .utils import psf2otf
 import random
 import cv2
 import pdb
