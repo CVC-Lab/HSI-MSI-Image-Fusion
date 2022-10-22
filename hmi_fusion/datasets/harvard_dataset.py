@@ -36,6 +36,7 @@ def load_data(dataset_dir, mode="train", train_split=0.6):
     # we have 27 images taken in under artificial or mixed illumination
     for folder in os.listdir(dataset_dir):
         if folder.startswith('.'): continue
+        if folder == "matfiles": continue
         folder = os.path.join(dataset_dir, folder)
         if not os.path.isdir(folder): continue
         folders.append(sorted([os.path.join(folder, file)
@@ -54,7 +55,8 @@ def load_data(dataset_dir, mode="train", train_split=0.6):
     # loaded_data.append([mat['lbl'], mat['ref']])
     for file in data:
         mat = sio.loadmat(file)
-        loaded_data.append([mat['lbl'], mat['ref']])
+        loaded_data.append([mat['lbl'], mat['ref'], 
+        os.path.splitext(os.path.basename(file))[0]])
 
     return loaded_data
         
@@ -97,7 +99,7 @@ class HarvardDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        HR_HSI, HR_MSI = self.data[idx]
+        HR_HSI, HR_MSI, name = self.data[idx]
         # sz = [self.sizeI, self.sizeI]
         # print(HR_HSI.shape)
         sz = self.sz
@@ -123,7 +125,7 @@ class HarvardDataset(Dataset):
         lr_hsi = lr_hsi.squeeze(0)
         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
         # lr_hsi.shape: torch.Size([1, 130, 174]), hr_hsi.shape: torch.Size([1, 1040, 1392]), hr_msi.shape: torch.Size([31, 1040, 1392])
-        return lr_hsi, hr_msi, hr_hsi # Yh, Ym, X
+        return name, lr_hsi, hr_msi, hr_hsi # Yh, Ym, X
 
 
 
