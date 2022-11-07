@@ -25,6 +25,7 @@ optimizer = Adam(model.parameters(), lr=lr)
 # z = torch.rand(512, 512, 3).numpy()
 
 model.train()
+alpha, beta = 1e-3, 1e-4
 for epoch in range(epochs):
     train_recon_loss = 0
     train_gl_loss = 0
@@ -33,11 +34,11 @@ for epoch in range(epochs):
         c, y, z, x, lz = items
         y_hat, x_hat = model(x)
         recon_loss, GL = calc_loss(x_hat, y_hat, lz, y)
-        total_loss = recon_loss.sum() + GL.sum()
+        total_loss = alpha*recon_loss + beta*GL
         total_loss.backward()
         optimizer.step()
-        train_recon_loss += recon_loss.sum().item()
-        train_gl_loss += GL.sum().item()
+        train_recon_loss += recon_loss.item()
+        train_gl_loss += GL.item()
 
     if epoch % 2 == 0:
         print(f"epoch: {epoch} \

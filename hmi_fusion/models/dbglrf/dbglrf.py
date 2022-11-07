@@ -129,7 +129,7 @@ def calc_loss(x_hat, y_hat, lz, y):
 
     lz_xt = linear_operator.utils.sparse.bdsmm(lz, x_hat.transpose(1,2))
     GL = MatmulLinearOperator(x_hat, lz_xt)
-    GL = torch.trace(to_dense(GL))
+    GL = torch.diagonal(to_dense(GL), dim1=-2, dim2=-1).sum() # trace
     return recon_loss, GL
 
 
