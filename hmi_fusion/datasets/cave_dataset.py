@@ -5,15 +5,16 @@ from pathlib import Path
 import torch
 from PIL import Image
 import numpy as np
-from .utils import psf2otf
+from .utils import psf2otf, to_torch_sparse
 import random
+import scipy
 import cv2
 import pdb
 import os
 from models.hip.fusion.getLaplacian import getLaplacian
 import pypeln as pl
 
-
+save_laplacians_flag = False
 R = [[0.005, 0.007, 0.012, 0.015, 0.023, 0.025, 0.030, 0.026, 0.024, 0.019,
         0.010, 0.004, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.002, 0.003, 0.005, 0.007,
@@ -48,7 +49,7 @@ def para_setting(kernel_type, sf, sz, sigma):
 
 test_classes = ["balloons_ms", "cd_ms", "cloth_ms", "photo_and_face_ms", "thread_spools_ms"]
 
-save_laplacians_flag = False
+
 
 def load_data(dataset_dir, mode, cl):
     data =  []
@@ -77,9 +78,13 @@ def load_data(dataset_dir, mode, cl):
                 ms_path.append(os.path.join(c_path, im))
             elif im.endswith(".bmp"):
                 rgb_path = os.path.join(c_path, im)
-            elif im.endswith(".npy"):
+            # elif im.endswith(".npy"):
+            #     laplacian_path = os.path.join(c_path, im)
+            #     os.remove(laplacian_path)
+            elif im.endswith(".npz"):
                 laplacian_path = os.path.join(c_path, im)
-                laplacian_img = np.load(laplacian_path, allow_pickle=True)
+                # os.remove(laplacian_path)
+                laplacian_img = scipy.sparse.load_npz(laplacian_path)
                 
         # print(ms_path)
         ms_img = load_ms_img(ms_path=ms_path)
@@ -98,9 +103,9 @@ def save_laplacians(dataset_dir, cl, sf, mode="train"):
         lz = getLaplacian(HR_MSI, HR_MSI.shape[-1])
         # save file
         folder_path = Path(im_paths[0]).parents[0]
-        fp = os.path.join(folder_path, "laplacian.npy")
+        fp = os.path.join(folder_path, "laplacian.npz")
         print("saving:", fp)
-        np.save(fp, lz)
+        scipy.sparse.save_npz(fp, lz)
     
     stage = pl.process.map(get_laplacian, data, workers=8, maxsize=8)
     list(stage)
@@ -109,6 +114,9 @@ def save_laplacians(dataset_dir, cl, sf, mode="train"):
 if save_laplacians_flag:
     save_laplacians("./datasets/data/CAVE", cl=None, sf=8, mode="train")
     save_laplacians("./datasets/data/CAVE", cl=None, sf=8, mode="test")
+
+
+
 
 class CAVEDataset(Dataset):
     def __init__(self, dataset_dir, cl, mode="train", sf=8, transform=ToTensor()) -> None:
@@ -177,11 +185,12 @@ class CAVEDataset(Dataset):
         lr_hsi = lr_hsi.squeeze(0)
         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
         # [31, 64, 64], [31, 512, 512], [3, 512, 512]
-        return c, lr_hsi, hr_msi, hr_hsi, lz # Yh, Ym, X
+        # to_torch_sparse(lz)
+        return c, lr_hsi, hr_msi, hr_hsi, torch.from_numpy(lz.diagonal())# Yh, Ym, X
 
 # dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
 # c, lr_hsi, hr_msi, hr_hsi, lz = dataset[0]
-
+# from inside hmi_fusion run - python -m datasets.cave_dataset and set get_laplacian = True initially
     
 
 

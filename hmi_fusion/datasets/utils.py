@@ -26,6 +26,8 @@ import argparse
 import numpy as np
 
 from scipy.ndimage import rotate, zoom
+import torch
+import numpy as np
 
 # from . import fitsutils as fits
 # from .parser import ThrowingArgumentParser, ArgumentParserError
@@ -418,6 +420,16 @@ def setup_logger(log_filename='pypher.log'):  # pragma: no cover
     logger.addHandler(handler)
 
     return logger
+
+
+def to_torch_sparse(coo):
+    values = coo.data
+    indices = np.vstack((coo.row, coo.col))
+    i = torch.LongTensor(indices)
+    v = torch.FloatTensor(values)
+    shape = coo.shape
+    return torch.sparse.FloatTensor(i, v, torch.Size(shape))
+
 
 
 #######

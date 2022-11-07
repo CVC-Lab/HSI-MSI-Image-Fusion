@@ -15,7 +15,7 @@ from torchvision import transforms
 import scipy.sparse as ss
 import numpy as np
 import pdb
-from hip.fusion.getLaplacian import getLaplacian
+from ..hip.fusion.getLaplacian import getLaplacian
 import scipy
 dtype = torch.FloatTensor
 
@@ -119,26 +119,24 @@ class AutoEncoder(nn.Module):
         return y_hat, x_hat
 
 
-
-
-x = torch.rand(31, 512, 512)
-y = torch.rand(31, 64, 64)
-z = torch.rand(512, 512, 3).numpy()
-model = AutoEncoder(31, 31)
-y_hat, x_hat = model(x[None, ...])
-lz = getLaplacian(z, z.shape[2])
-
-xhd = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
-GL = torch.sum((torch.diagonal(xhd)**2) * torch.diagonal(lz))
-
-def calc_loss(x_hat, y_hat, lz, y):
+def calc_loss(x_hat, y_hat, dlz, y):
     loss = nn.MSELoss()
     recon_loss = loss(y_hat, y[None, ...])
-    lz = getLaplacian(z, z.shape[2])
     xhd = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
-    GL = torch.sum((torch.diagonal(xhd)**2) * torch.diagonal(lz))
-    return recon_loss + GL
+    # pdb.set_trace()
+    # dlz = torch.diagonal(lz)
+    GL = torch.sum(((torch.diagonal(xhd).T)**2) * dlz)
+    return recon_loss, GL
 
 
 
 
+# x = torch.rand(31, 512, 512)
+# y = torch.rand(31, 64, 64)
+# z = torch.rand(512, 512, 3).numpy()
+# model = AutoEncoder(31, 31)
+# y_hat, x_hat = model(x[None, ...])
+# lz = getLaplacian(z, z.shape[2])
+
+# xhd = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
+# GL = torch.sum((torch.diagonal(xhd)**2) * torch.diagonal(lz))
