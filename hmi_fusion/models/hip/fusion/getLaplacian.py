@@ -31,9 +31,6 @@ def getLaplacian(I, n3):
             
             win_mu=np.mean(winI,0).T
             win_mu = np.reshape(win_mu,(n3,1))
-            
-           
-            
             win_var=np.linalg.inv(winI.T @ winI/neb_size - win_mu @ win_mu.T + epsilon/neb_size*np.eye(c))
             winI=winI-np.repeat(win_mu.T,neb_size, axis = 0)
             tvals=(1 + winI @ win_var @ winI.T)/neb_size
@@ -58,5 +55,5 @@ def getLaplacian(I, n3):
     sumA=np.sum(A,1)
     sumA = np.ravel(sumA)
     A=scp.sparse.spdiags(sumA[:],0,img_size,img_size)-A
-    test = scp.sparse.coo_matrix.todense(A)
+    # test = scp.sparse.coo_matrix.todense(A)
     return A

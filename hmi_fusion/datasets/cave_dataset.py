@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 from torchvision.transforms import ToTensor
 from scipy.ndimage.interpolation import rotate
+from pathlib import Path
 import torch
 from PIL import Image
 import numpy as np
@@ -9,6 +10,8 @@ import random
 import cv2
 import pdb
 import os
+from models.hip.fusion.getLaplacian import getLaplacian
+import pypeln as pl
 
 
 R = [[0.005, 0.007, 0.012, 0.015, 0.023, 0.025, 0.030, 0.026, 0.024, 0.019,
@@ -45,6 +48,7 @@ def para_setting(kernel_type, sf, sz, sigma):
 
 test_classes = ["balloons_ms", "cd_ms", "cloth_ms", "photo_and_face_ms", "thread_spools_ms"]
 
+save_laplacians_flag = False
 
 def load_data(dataset_dir, mode, cl):
     data =  []
@@ -66,19 +70,45 @@ def load_data(dataset_dir, mode, cl):
         if not os.path.isdir(c_path): continue
         ms_path = []
         rgb_path = None
+        laplacian_img = None
         # print(c)
         for im in os.listdir(c_path):
             if "_ms_" in im:
                 ms_path.append(os.path.join(c_path, im))
             elif im.endswith(".bmp"):
                 rgb_path = os.path.join(c_path, im)
+            elif im.endswith(".npy"):
+                laplacian_path = os.path.join(c_path, im)
+                laplacian_img = np.load(laplacian_path, allow_pickle=True)
+                
         # print(ms_path)
         ms_img = load_ms_img(ms_path=ms_path)
-        
         rgb_img = np.array(Image.open(rgb_path))
-        data.append((c, ms_img, rgb_img))
+        data.append((c, ms_path, ms_img, rgb_img, laplacian_img))
     return classes, class2id, data
+
+def save_laplacians(dataset_dir, cl, sf, mode="train"):
+    sf=8
+    transform=ToTensor()
+    classes, class2id, data = load_data(dataset_dir, mode, cl=cl)
+    sizeI = 512
+    factor = sf
+    def get_laplacian(x):
+        c, im_paths, HR_HSI, HR_MSI, _ = x
+        lz = getLaplacian(HR_MSI, HR_MSI.shape[-1])
+        # save file
+        folder_path = Path(im_paths[0]).parents[0]
+        fp = os.path.join(folder_path, "laplacian.npy")
+        print("saving:", fp)
+        np.save(fp, lz)
+    
+    stage = pl.process.map(get_laplacian, data, workers=8, maxsize=8)
+    list(stage)
         
+
+if save_laplacians_flag:
+    save_laplacians("./datasets/data/CAVE", cl=None, sf=8, mode="train")
+    save_laplacians("./datasets/data/CAVE", cl=None, sf=8, mode="test")
 
 class CAVEDataset(Dataset):
     def __init__(self, dataset_dir, cl, mode="train", sf=8, transform=ToTensor()) -> None:
@@ -122,7 +152,7 @@ class CAVEDataset(Dataset):
     def __getitem__(self, idx):
         # need to convert to Tensor
         # c, ms_img, rgb_img = self.data[idx]
-        c, HR_HSI, HR_MSI = self.data[idx]
+        c, _, HR_HSI, HR_MSI, lz = self.data[idx]
         # print(HR_HSI.shape, HR_MSI.shape)
         sz = [self.sizeI, self.sizeI]
         sigma = 2.0
@@ -147,9 +177,15 @@ class CAVEDataset(Dataset):
         lr_hsi = lr_hsi.squeeze(0)
         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
         # [31, 64, 64], [31, 512, 512], [3, 512, 512]
-        return c, lr_hsi, hr_msi, hr_hsi # Yh, Ym, X
+        return c, lr_hsi, hr_msi, hr_hsi, lz # Yh, Ym, X
 
-# dataset = CAVEDataset("./data/CAVE", mode="train")
+# dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
+# c, lr_hsi, hr_msi, hr_hsi, lz = dataset[0]
+
+    
+
+
+    
 
 
 # final_dataset = {
