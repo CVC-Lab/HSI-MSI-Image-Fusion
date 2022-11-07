@@ -185,8 +185,8 @@ class CAVEDataset(Dataset):
         lr_hsi = lr_hsi.squeeze(0)
         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
         # [31, 64, 64], [31, 512, 512], [3, 512, 512]
-        # to_torch_sparse(lz)
-        return c, lr_hsi, hr_msi, hr_hsi, torch.from_numpy(lz.diagonal())# Yh, Ym, X
+        # to_torch_sparse(lz.tocoo())
+        return c, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo())#torch.from_numpy(lz.diagonal())# Yh, Ym, X
 
 # dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
 # c, lr_hsi, hr_msi, hr_hsi, lz = dataset[0]

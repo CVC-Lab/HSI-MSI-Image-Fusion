@@ -4,6 +4,9 @@ from time import time
 # import pandas as pd
 # from PIL import Image
 # import matplotlib.pyplot as plt
+import linear_operator
+from linear_operator.operators import MatmulLinearOperator
+from linear_operator import to_dense
 
 import torch
 import torch.nn as nn
@@ -119,13 +122,14 @@ class AutoEncoder(nn.Module):
         return y_hat, x_hat
 
 
-def calc_loss(x_hat, y_hat, dlz, y):
+def calc_loss(x_hat, y_hat, lz, y):
     loss = nn.MSELoss()
     recon_loss = loss(y_hat, y[None, ...])
-    xhd = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
-    # pdb.set_trace()
-    # dlz = torch.diagonal(lz)
-    GL = torch.sum(((torch.diagonal(xhd).T)**2) * dlz)
+    x_hat = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
+
+    lz_xt = linear_operator.utils.sparse.bdsmm(lz, x_hat.transpose(1,2))
+    GL = MatmulLinearOperator(x_hat, lz_xt)
+    GL = torch.trace(to_dense(GL))
     return recon_loss, GL
 
 
