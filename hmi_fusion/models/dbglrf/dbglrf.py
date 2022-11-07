@@ -124,9 +124,8 @@ class AutoEncoder(nn.Module):
 
 def calc_loss(x_hat, y_hat, lz, y):
     loss = nn.MSELoss()
-    recon_loss = loss(y_hat, y[None, ...])
+    recon_loss = loss(y_hat, y)
     x_hat = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
-
     lz_xt = linear_operator.utils.sparse.bdsmm(lz, x_hat.transpose(1,2))
     GL = MatmulLinearOperator(x_hat, lz_xt)
     GL = torch.diagonal(to_dense(GL), dim1=-2, dim2=-1).sum() # trace

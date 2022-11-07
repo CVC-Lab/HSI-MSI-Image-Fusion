@@ -23,7 +23,7 @@ optimizer = Adam(model.parameters(), lr=lr)
 # x = torch.rand(31, 512, 512)
 # y = torch.rand(31, 64, 64)
 # z = torch.rand(512, 512, 3).numpy()
-
+print("starting training")
 model.train()
 alpha, beta = 1e-3, 1e-4
 for epoch in range(epochs):
@@ -33,7 +33,7 @@ for epoch in range(epochs):
         optimizer.zero_grad()
         c, y, z, x, lz = items
         y_hat, x_hat = model(x)
-        recon_loss, GL = calc_loss(x_hat, y_hat, lz, y)
+        recon_loss, GL = calc_loss(x_hat, y_hat, lz, y.squeeze())
         total_loss = alpha*recon_loss + beta*GL
         total_loss.backward()
         optimizer.step()
