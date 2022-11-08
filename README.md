@@ -19,7 +19,7 @@ Make sure you have recursively cloned all submodules of this repository.
 1. Download cave_dataset
 2. In cave_dataset.py set ``save_laplacians_flag = True``. 
 3. From hmi_fusion run ``python -m datasets.cave_dataset``. After completion set ``save_laplacians_flag = False``
-2. Navigate to hmi_fusion - ``python -m models.dbglrf.train``
+2. Navigate to hmi_fusion - ``python -m models.dbglrf.train_new``
 
 
 ## Replicating benchmarks

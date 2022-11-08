@@ -1,6 +1,7 @@
 name: hsi
 channels:
   - pytorch
+  - nvidia
   - default
   - conda-forge
 dependencies:
@@ -12,7 +13,6 @@ dependencies:
   - opencv
   - scikit-learn
   - scikit-image
-  - torchmetrics
   - pip
   - pip:
     - -r requirements.txt

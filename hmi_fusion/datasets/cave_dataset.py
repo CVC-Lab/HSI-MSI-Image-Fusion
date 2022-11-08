@@ -1,5 +1,7 @@
 from torch.utils.data import Dataset
-from torchvision.transforms import ToTensor
+from torchvision.transforms import ToTensor, Normalize
+
+
 from scipy.ndimage.interpolation import rotate
 from pathlib import Path
 import torch
@@ -15,6 +17,7 @@ from models.hip.fusion.getLaplacian import getLaplacian
 import pypeln as pl
 
 save_laplacians_flag = False
+
 R = [[0.005, 0.007, 0.012, 0.015, 0.023, 0.025, 0.030, 0.026, 0.024, 0.019,
         0.010, 0.004, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.002, 0.003, 0.005, 0.007,
@@ -92,36 +95,10 @@ def load_data(dataset_dir, mode, cl):
         data.append((c, ms_path, ms_img, rgb_img, laplacian_img))
     return classes, class2id, data
 
-def save_laplacians(dataset_dir, cl, sf, mode="train"):
-    sf=8
-    transform=ToTensor()
-    classes, class2id, data = load_data(dataset_dir, mode, cl=cl)
-    sizeI = 512
-    factor = sf
-    def get_laplacian(x):
-        c, im_paths, HR_HSI, HR_MSI, _ = x
-        lz = getLaplacian(HR_MSI, HR_MSI.shape[-1])
-        # save file
-        folder_path = Path(im_paths[0]).parents[0]
-        fp = os.path.join(folder_path, "laplacian.npz")
-        print("saving:", fp)
-        scipy.sparse.save_npz(fp, lz)
-    
-    stage = pl.process.map(get_laplacian, data, workers=8, maxsize=8)
-    list(stage)
-        
-
-if save_laplacians_flag:
-    save_laplacians("./datasets/data/CAVE", cl=None, sf=8, mode="train")
-    save_laplacians("./datasets/data/CAVE", cl=None, sf=8, mode="test")
-
-
-
-
 class CAVEDataset(Dataset):
     def __init__(self, dataset_dir, cl, mode="train", sf=8, transform=ToTensor()) -> None:
         super().__init__()
-        self.transform = transform
+        
         # pdb.set_trace()
         self.classes, self.class2id, self.data = load_data(dataset_dir, mode, cl=cl)
         self.sizeI = 512
@@ -180,111 +157,46 @@ class CAVEDataset(Dataset):
         lr_hsi = self.H_z(hr_hsi, self.factor, fft_B)
         lr_hsi = torch.FloatTensor(lr_hsi)
 
-        hr_hsi = hr_hsi.squeeze(0)
-        hr_msi = hr_msi.squeeze(0)
-        lr_hsi = lr_hsi.squeeze(0)
+        # hr_hsi = self.transform['x'](hr_hsi.squeeze(0).float())
+        # hr_msi = self.transform['z'](hr_msi.squeeze(0).float())
+        # lr_hsi = self.transform['y'](lr_hsi.squeeze(0).float())
+        hr_hsi = hr_hsi.squeeze(0).float()/255
+        hr_msi = hr_msi.squeeze(0).float()/255
+        lr_hsi = lr_hsi.squeeze(0).float()/255
         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
         # [31, 64, 64], [31, 512, 512], [3, 512, 512]
         # to_torch_sparse(lz.tocoo())
+        # c, y, z, x, lz
         return c, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo())#torch.from_numpy(lz.diagonal())# Yh, Ym, X
 
 # dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
 # c, lr_hsi, hr_msi, hr_hsi, lz = dataset[0]
 # from inside hmi_fusion run - python -m datasets.cave_dataset and set get_laplacian = True initially
+
+def save_laplacians(dataset_dir, cl, sf, mode="train"):
+    sf=8
+    # preprocess should be run first
+    classes, class2id, data = load_data(dataset_dir, mode, cl=cl)
+    # nparams = torch.load("./datasets/data/CAVE/normalize_params.pt")
+    sizeI = 512
+    factor = sf
+    def get_laplacian(x):
+        # transform = Normalize(mean, std)
+        c, im_paths, HR_HSI, HR_MSI, _ = x
+        # t = torch.from_numpy(HR_MSI).float().permute(2, 0, 1)
+        # HR_MSI = transform(t).permute(1, 2, 0).numpy()
+        # normalize HR_MSI first
+        lz = getLaplacian(HR_MSI/255, HR_MSI.shape[-1])
+        # save file
+        folder_path = Path(im_paths[0]).parents[0]
+        fp = os.path.join(folder_path, "laplacian.npz")
+        print("saving:", fp)
+        scipy.sparse.save_npz(fp, lz)
     
-
-
-    
-
-
-# final_dataset = {
-#     'lr_hsi': [],
-#     'hr_msi': [],
-#     'hr_hsi': []
-# }
-# dataset = CAVEDataset("./data/CAVE", mode="test", cl="balloons_ms")
-# pdb.set_trace()
-# for i in range(len(dataset)):
-#     lr_hsi, hr_msi, hr_hsi = dataset[i]
-#     pdb.set_trace()
-#     final_dataset['lr_hsi'].append(lr_hsi.numpy())
-#     final_dataset['hr_msi'].append(hr_msi.numpy())
-#     final_dataset['hr_hsi'].append(hr_hsi.numpy())
-
-
-# class CAVEDatasetSingleShape(Dataset):
-#     def __init__(self, dataset_dir, cl, mode="train", sf=8, transform=ToTensor()) -> None:
-#         super().__init__()
-#         self.transform = transform
-#         self.classes, self.class2id, self.data = load_data(dataset_dir, mode, cl=cl)
-#         self.sizeI = 512
-#         self.factor = sf # scaling factor
-#         self.mode = mode
-
-#     def H_z(self, z, factor, fft_B):
-#         # f = torch.fft.rfft(z, 2, onesided=False)
-#         f = torch.fft.fft2(z) # [1, 31, 512, 512]
-#         f = torch.view_as_real(f) #[1, 31, 512, 512, 2]
+    stage = pl.process.map(get_laplacian, data, workers=8, maxsize=8)
+    list(stage)
         
-#         # -------------------complex myltiply-----------------#
-#         if len(z.shape) == 3:
-#             ch, h, w = z.shape
-#             fft_B = fft_B.unsqueeze(0).repeat(ch, 1, 1, 1)
-#             M = torch.cat(((f[:, :, :, 0] * fft_B[:, :, :, 0] - f[:, :, :, 1] * fft_B[:, :, :, 1]).unsqueeze(3),
-#                            (f[:, :, :, 0] * fft_B[:, :, :, 1] + f[:, :, :, 1] * fft_B[:, :, :, 0]).unsqueeze(3)), 3)
-#             # Hz = torch.fft.irfft(M, 2, onesided=False)
-#             Hz = torch.fft.ifft2(torch.view_as_complex(M))
-#             x = Hz[:, int(factor // 2)-1::factor, int(factor // 2)-1::factor]
-#         elif len(z.shape) == 4:
-#             bs, ch, h, w = z.shape
-#             fft_B = fft_B.unsqueeze(0).unsqueeze(0).repeat(bs, ch, 1, 1, 1)
-#             M = torch.cat(
-#                 ((f[:, :, :, :, 0] * fft_B[:, :, :, :, 0] - f[:, :, :, :, 1] * fft_B[:, :, :, :, 1]).unsqueeze(4),
-#                  (f[:, :, :, :, 0] * fft_B[:, :, :, :, 1] + f[:, :, :, :, 1] * fft_B[:, :, :, :, 0]).unsqueeze(4)), 4)
-#             # Hz = torch.irfft(M, 2, onesided=False)
-#             Hz = torch.fft.ifft2(torch.view_as_complex(M))
-#             x = Hz[:, :, int(factor // 2)-1::factor, int(factor // 2)-1::factor]
-       
-#         return torch.view_as_real(x)[..., 0]
 
-#     def __len__(self):
-#         return len(self.data)
-
-#     def __getitem__(self, idx):
-#         # need to convert to Tensor
-#         # c, ms_img, rgb_img = self.data[idx]
-#         c, HR_HSI, HR_MSI = self.data[idx]
-#         sz = [self.sizeI, self.sizeI]
-#         sigma = 2.0
-#         fft_B, fft_BT = para_setting('gaussian_blur', self.factor, sz, sigma)
-#         fft_B = torch.cat((torch.Tensor(np.real(fft_B)).unsqueeze(2), torch.Tensor(np.imag(fft_B)).unsqueeze(2)),2)
-#         fft_BT = torch.cat((torch.Tensor(np.real(fft_BT)).unsqueeze(2), torch.Tensor(np.imag(fft_BT)).unsqueeze(2)), 2)
-
-#         px      = random.randint(0, 512-self.sizeI)
-#         py      = random.randint(0, 512-self.sizeI)
-#         # print("c", c, "hrhsi before:", HR_HSI.shape)
-#         hr_hsi  = HR_HSI[px:px + self.sizeI:1, py:py + self.sizeI:1, :]
-#         hr_msi  = HR_MSI[px:px + self.sizeI:1, py:py + self.sizeI:1, :]
-
-#         # print("hrhsi before:", hr_hsi.shape)
-#         # if self.mode == "train":
-#             # rotTimes = random.randint(0, 3)
-#             # vFlip    = random.randint(0, 1)
-#             # hFlip    = random.randint(0, 1)
-#             # rot_angle = random.randint(0, 10)
-#             # hr_hsi = rotate(hr_hsi, angle=rot_angle)
-#             # hr_msi  = rotate(hr_msi, angle=rot_angle)
-            
-
-#         # print("hrhsi after:", hr_hsi.shape)
-#         hr_hsi = torch.FloatTensor(hr_hsi.copy()).permute(2,0,1).unsqueeze(0)
-#         hr_msi = torch.FloatTensor(hr_msi.copy()).permute(2,0,1).unsqueeze(0)
-#         lr_hsi = self.H_z(hr_hsi, self.factor, fft_B)
-#         lr_hsi = torch.FloatTensor(lr_hsi)
-
-#         hr_hsi = hr_hsi.squeeze(0)
-#         hr_msi = hr_msi.squeeze(0)
-#         lr_hsi = lr_hsi.squeeze(0)
-#         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
-#         # [31, 64, 64], [31, 512, 512], [3, 512, 512]
-#         return lr_hsi, hr_msi, hr_hsi # Yh, Ym, X
+if save_laplacians_flag:
+    save_laplacians("./datasets/data/CAVE", cl=None, sf=8, mode="train")
+    save_laplacians("./datasets/data/CAVE", cl=None, sf=8, mode="test")
