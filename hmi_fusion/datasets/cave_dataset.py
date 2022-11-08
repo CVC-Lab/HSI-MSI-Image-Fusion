@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 from torchvision.transforms import ToTensor, Normalize
-
+import torch.nn.functional as F
 
 from scipy.ndimage.interpolation import rotate
 from pathlib import Path
@@ -104,6 +104,9 @@ class CAVEDataset(Dataset):
         self.sizeI = 512
         self.factor = sf # scaling factor
         self.mode = mode
+        self.x_states = [
+            None for _ in range(len(self.data))
+        ]
 
     def H_z(self, z, factor, fft_B):
         # f = torch.fft.rfft(z, 2, onesided=False)
@@ -163,11 +166,22 @@ class CAVEDataset(Dataset):
         hr_hsi = hr_hsi.squeeze(0).float()/255
         hr_msi = hr_msi.squeeze(0).float()/255
         lr_hsi = lr_hsi.squeeze(0).float()/255
+
+        if type(self.x_states[idx])  == type(None):
+            ipt = lr_hsi.numpy()
+            x_k = torch.zeros_like(hr_hsi)
+            N1, N2 = x_k.shape[1:]
+            # print(x_k.shape)
+            for c in range(x_k.shape[0]):
+                x_k[c, :, :] = torch.FloatTensor(cv2.resize(ipt[c, :, :], (N1, N2), interpolation=cv2.INTER_CUBIC))
+        else:
+            x_k = self.x_states[idx]
         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
         # [31, 64, 64], [31, 512, 512], [3, 512, 512]
         # to_torch_sparse(lz.tocoo())
         # c, y, z, x, lz
-        return c, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo())#torch.from_numpy(lz.diagonal())# Yh, Ym, X
+        # c, x_old, y, z, _, lz, idx
+        return c, x_k, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo()), idx#torch.from_numpy(lz.diagonal())# Yh, Ym, X
 
 # dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
 # c, lr_hsi, hr_msi, hr_hsi, lz = dataset[0]

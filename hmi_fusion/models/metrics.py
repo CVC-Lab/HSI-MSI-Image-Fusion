@@ -2,7 +2,7 @@ import skimage.transform
 import os
 from skimage.measure import block_reduce
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio, structural_similarity
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity, mean_squared_error
 from matplotlib import pyplot as plt
 
 def compare_mpsnr(x_true, x_pred):
@@ -25,20 +25,30 @@ def compare_mssim(x_true, x_pred, multichannel=True):
     return np.mean(mssim)
 
 
-def find_rmse(img_tar, img_hr):
-
-    ref = img_tar * 255.0
-    tar = img_hr * 255.0
-    lr_flags = tar < 0
-    tar[lr_flags] = 0
-    hr_flags = tar > 255.0
-    tar[hr_flags] = 255.0
-
-    diff = ref - tar
-    size = ref.shape
-    rmse = np.sqrt(np.sum(np.sum(np.power(diff, 2))) / (size[0] * size[1]*size[2]))
-
+def find_rmse(img_true, img_pred):
+    rmse_per_band = []
+    mse_per_band = []
+    n_bands = img_true.shape[-1]
+    for i in range(n_bands):
+        mse = mean_squared_error(img_true[:,:,i],img_pred[:,:,i].T)
+        mse_per_band.append((mse))
+        rmse_per_band.append(np.sqrt(mse))
+    rmse = np.sum(rmse_per_band)/n_bands
+    mse = np.sum(mse_per_band)/n_bands
     return rmse
+
+    # ref = img_tar * 255.0
+    # tar = img_hr * 255.0
+    # lr_flags = tar < 0
+    # tar[lr_flags] = 0
+    # hr_flags = tar > 255.0
+    # tar[hr_flags] = 255.0
+
+    # diff = ref - tar
+    # size = ref.shape
+    # rmse = np.sqrt(np.sum(np.sum(np.power(diff, 2))) / (size[0] * size[1]*size[2]))
+
+    # return rmse
 
 
 def compare_sam(x_true, x_pred):

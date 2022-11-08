@@ -100,6 +100,10 @@ class HarvardDataset(Dataset):
 
     def __getitem__(self, idx):
         HR_HSI, HR_MSI, name = self.data[idx]
+        size_r = HR_MSI.shape[0]
+        HR_HSI = HR_HSI[:size_r, :size_r]
+        HR_MSI = HR_MSI[:size_r, :size_r, :]
+
         # sz = [self.sizeI, self.sizeI]
         # print(HR_HSI.shape)
         sz = self.sz
@@ -129,7 +133,7 @@ class HarvardDataset(Dataset):
 
 
 
-# load_data("./data/Harvard")
+# load_data("./datasets/data/Harvard")
 
 # dataset = HarvardDataset("./data/Harvard", mode="test")
 # pdb.set_trace()

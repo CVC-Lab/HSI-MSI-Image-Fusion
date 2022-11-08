@@ -3,7 +3,9 @@ from datasets.cave_dataset import CAVEDataset
 import numpy as np
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
-
+from .test_model import get_final_metric_scores
+from .viz_utils import image_grid, plot_to_image
+import torch.nn.functional as F
 import torch
 import os
 import pdb
@@ -13,27 +15,32 @@ epochs = 40
 batch_size = 8
 in_channels = 31
 dec_channels = 31
+sf = 8
 lr = 1e-3
 model_name = "ae"
 load_best_model = False
 model_path = f"./artifacts/{model_name}/gmodel.pth"
-if not os.path.exists("./artifacts/{model_name}"):
-    os.makedirs("./artifacts/{model_name}")
+if not os.path.exists(f"./artifacts/{model_name}"):
+    os.makedirs(f"./artifacts/{model_name}")
 
-writer = SummaryWriter("./artifacts/{model_name}")
+torch.cuda.set_device("cuda:0")
+
+writer = SummaryWriter(f"./artifacts/{model_name}")
 train_dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
 test_dataset = CAVEDataset("./datasets/data/CAVE", None, mode="test")
 train_loader = torch.utils.data.DataLoader(train_dataset,
                                            shuffle=True, batch_size=batch_size)
 test_loader = torch.utils.data.DataLoader(test_dataset,
                                           shuffle=False, batch_size=batch_size)
-model = AutoEncoder(in_channels=in_channels, dec_channels=dec_channels)
+model = AutoEncoder(in_channels=in_channels, dec_channels=dec_channels).cuda()
 if load_best_model:
     model.load_state_dict(torch.load(model_path))
 optimizer = Adam(model.parameters(), lr=lr)
 print("starting training")
 alpha, beta, gamma, delta = 1, 1, 1.5, 1
 best_model_test_loss = np.inf
+n_random_samples = 2
+
 for epoch in range(epochs):
     model.train()
     train_recon_loss_x = 0
@@ -43,9 +50,14 @@ for epoch in range(epochs):
     total_train_loss = 0
     for items in train_loader:
         optimizer.zero_grad()
-        c, y, z, x, lz = items
-        y_hat, x_hat = model(x, y, z, mode="train")
-        recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_hat, y_hat, lz, x, y)
+        c, x_old, y, z, _, lz, idxs = items
+        x_old = x_old.cuda()
+        y_hat, x_new = model(x_old)
+        
+        for j, idx in enumerate(idxs):
+            train_loader.dataset.x_states[int(idx.item())] = x_new[j, ...].detach().cpu()
+        
+        recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_new, y_hat, lz.cuda(), x_old, y.cuda())
         total_loss = alpha*recon_loss_x + beta*recon_loss_y + gamma*sam_loss + delta*GL 
         total_loss.backward()
         optimizer.step()
@@ -67,21 +79,25 @@ for epoch in range(epochs):
         GLaplacian loss: {train_gl_loss/len(train_loader)}")
         model.eval()
         test_recon_loss_x = 0
+        test_recon_loss_y = 0
         test_sam_loss = 0
         test_gl_loss = 0
         total_test_loss = 0
         for items in test_loader:
-            c, y, z, x, lz = items
-            y_hat, x_hat = model(x, y, z, mode="test")
-            recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_hat, y_hat, lz, x, y)
+            c, x_old, y, z, x_gt, lz, idx = items
+            x_old = x_old.cuda()
+            y_hat, x_new = model(x_old)
+            recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_new, y_hat, lz.cuda(), x_old, y.cuda())
             total_loss = recon_loss_x + sam_loss + GL 
             test_recon_loss_x += recon_loss_x.item()
+            test_recon_loss_y += recon_loss_y.item()
             test_sam_loss += sam_loss.item() 
             test_gl_loss += GL.item()
             total_test_loss = total_loss.item()
 
         print(f"test epoch: {epoch} \
         recon_x loss: {test_recon_loss_x/len(test_loader)}, \
+        recon_y loss: {test_recon_loss_y/len(test_loader)}, \
         sam_loss loss: {test_sam_loss/len(test_loader)}, \
         GLaplacian loss: {test_gl_loss/len(test_loader)}")
         total_test_loss /= len(test_loader)
@@ -90,9 +106,26 @@ for epoch in range(epochs):
         writer.add_scalar("Loss_SAM/test", test_sam_loss/len(test_loader), epoch)
     
         if best_model_test_loss > total_test_loss:
-           best_model_test_loss =  best_model_test_loss
-           print("saving ...")
-           torch.save(model.state_dict(), model_path)
+            best_model_test_loss =  total_test_loss
+            print("saving ...")
+            torch.save(model.state_dict(), model_path)
+            opt = get_final_metric_scores(model, test_dataset, sf)
+            # writer.add_text("metrics", opt, epoch)
+            img_tensor = []
+            model.eval()
+            for i in range(n_random_samples):
+                items = test_dataset[i]
+                c, x_old, y, z, x_gt, lz, idx = items
+                y_hat, x_new = model(x_old[None, ...].cuda())
+                img_tensor.append(x_new.detach().cpu())
+
+            for sid in range(n_random_samples):
+                figure = image_grid(img_tensor[sid].squeeze(), sid)
+                writer.add_image(f'{sid}_random_latent_space_samples_{epoch}',
+                img_tensor=plot_to_image(figure)[..., :3],
+                global_step=epoch,
+                dataformats='HWC')
+
 writer.close()
     
 

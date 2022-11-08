@@ -18,14 +18,13 @@ import scipy.sparse as ss
 import numpy as np
 import pdb
 from ..hip.fusion.getLaplacian import getLaplacian
+from .tv_layers_for_cv.tv_opt_layers.layers.general_tv_2d_layer import GeneralTV2DLayer
 import scipy
 dtype = torch.FloatTensor
 
 def calc_sam_loss(pred, tgt):
-    return torch.arccos((pred * tgt)/(torch.linalg.norm(pred)*torch.linalg.norm(tgt))).mean()
-
-
-
+    return torch.arccos((pred.view(pred.shape[0], -1) * tgt.view(tgt.shape[0], -1)).sum(-1)/
+    (torch.linalg.norm(pred)*torch.linalg.norm(tgt))).mean()
 
 
 class Decoder(nn.Module):
@@ -34,28 +33,34 @@ class Decoder(nn.Module):
         self.d_conv_1 = nn.Conv2d(dec_channels, dec_channels, 
                                   kernel_size=(3, 3), stride=(1, 1), padding=1)
         self.d_bn_1 = nn.BatchNorm2d(dec_channels)
-        self.d_conv_2 = nn.Conv2d(dec_channels, dec_channels, 
+        self.d_conv_2 = nn.Conv2d(dec_channels*3, dec_channels, 
                                   kernel_size=(3, 3), stride=(1, 1), padding=1)
         self.d_bn_2 = nn.BatchNorm2d(dec_channels)
-        self.d_conv_3 = nn.Conv2d(dec_channels, dec_channels, 
+        self.d_conv_3 = nn.Conv2d(dec_channels*3, dec_channels, 
                                   kernel_size=(3, 3), stride=(1, 1), padding=1)
+        self.tv_layer = GeneralTV2DLayer(lmbd_init=30,num_iter=10)
         self.d_bn_3 = nn.BatchNorm2d(dec_channels)
+        
 
-    def forward(self, x):
+    def forward(self, x, layers):
         # h2
         x = F.interpolate(x, scale_factor=2)
         x = self.d_conv_1(x)
         x = F.leaky_relu(x, negative_slope=0.2, inplace=True)
         x = self.d_bn_1(x)
+        x = torch.cat([x, layers[0]], 1)
+        # pdb.set_trace()
         # h3
         x = F.interpolate(x, scale_factor=2)
         x = self.d_conv_2(x)
         x = F.leaky_relu(x, negative_slope=0.2, inplace=True)
         x = self.d_bn_2(x)
+        x = torch.cat([x, layers[1]], 1)
         # h4
         x = F.interpolate(x, scale_factor=2)
         x = self.d_conv_3(x)
         x = F.leaky_relu(x, negative_slope=0.2, inplace=True)
+        x = self.tv_layer(x)
         x = self.d_bn_3(x)  
         return x
 
@@ -74,26 +79,25 @@ class Encoder(nn.Module):
         self.e_bn_3 = nn.BatchNorm2d(in_channels)
         self.pool = nn.MaxPool2d(2)
 
-
-    def forward(self, x):   
+    def forward(self, x):  
         #h1
         x = self.e_conv_1(x)
         x = F.leaky_relu(x, negative_slope=0.2, inplace=True)
         x = self.e_bn_1(x)
         x = self.pool(x)
-        
+        o1 = x
         #h2
         x = self.e_conv_2(x)
         x = F.leaky_relu(x, negative_slope=0.2, inplace=True)    
         x = self.e_bn_2(x)     
         x = self.pool(x)
+        o2 = x
         #h3
         x = self.e_conv_3(x)
         x = F.leaky_relu(x, negative_slope=0.2, inplace=True) 
         x = self.e_bn_3(x)
         x = self.pool(x)
-
-        return x
+        return x, [o2, o1]
        
 
 class AutoEncoder(nn.Module):
@@ -115,29 +119,23 @@ class AutoEncoder(nn.Module):
                 nn.init.kaiming_normal_(m.weight.detach())
                 m.bias.detach().zero_()
 
-    def forward(self, x=None, y=None, z=None, mode="train"):
-        if mode == "train":
-            y_hat = self.encoder(x) # downsample from 512 to 64
-            x_hat = self.decoder(y_hat) # 31 channels
-            return y_hat, x_hat
-        else:
-            x_hat = self.decoder(y)
-            return x_hat
+    def forward(self, x_k):
+        y_hat, layers = self.encoder(x_k) # downsample from 512 to 64
+        x_hat = self.decoder(y_hat, layers) # 31 channels
+        return y_hat, x_hat
+        
 
-    def calc_loss(self, x_hat, y_hat, lz, x, y):
+    def calc_loss(self, x_new, y_hat, lz, x_old, y):
         loss = nn.MSELoss()
-        if isinstance(y_hat, None):
-            recon_loss_y = None
-        else:
-            recon_loss_y = loss(y_hat, y)
-        recon_loss_x = loss(x_hat, x)
+        recon_loss_y = loss(y_hat, y)
+        recon_loss_x = loss(x_new, x_old)
         # SAM loss
-        sam_loss = calc_sam_loss(x_hat, x)
+        sam_loss = calc_sam_loss(x_new, x_old)
         ### Graph Laplacian Loss
-        x_hat = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
-        lz_xt = linear_operator.utils.sparse.bdsmm(lz, x_hat.transpose(1,2))
-        GL = MatmulLinearOperator(x_hat, lz_xt)
-        factor = x_hat.shape[-1]
+        x_new = x_new.reshape(x_new.shape[0], x_new.shape[1], -1)
+        lz_xt = linear_operator.utils.sparse.bdsmm(lz, x_new.transpose(1,2))
+        GL = MatmulLinearOperator(x_new, lz_xt)
+        factor = x_new.shape[-1]
         GL = torch.diagonal(to_dense(GL)/factor, dim1=-2, dim2=-1).sum() # trace
         return recon_loss_x, sam_loss, recon_loss_y, GL
 
@@ -147,7 +145,6 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-
         self.e_conv_1 = nn.Conv2d(in_channels, in_channels*2, 
                                   kernel_size=(3, 3), stride=(1, 1), padding=1)
         self.e_bn_1 = nn.BatchNorm2d(in_channels*2)
@@ -215,8 +212,84 @@ class AutoEncoder2(nn.Module):
         
 
 
+class AutoEncoder3(nn.Module):
+    def __init__(self, in_channels, dec_channels):
+        super(AutoEncoder, self).__init__()
+        self.in_channels = in_channels
+        self.dec_channels = dec_channels
+        self.encoder = Encoder(in_channels)
+        self.decoder = Decoder(dec_channels)
+        # Reinitialize weights using He initialization
+        for m in self.modules():
+            if isinstance(m, torch.nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight.detach())
+                m.bias.detach().zero_()
+            elif isinstance(m, torch.nn.ConvTranspose2d):
+                nn.init.kaiming_normal_(m.weight.detach())
+                m.bias.detach().zero_()
+            elif isinstance(m, torch.nn.Linear):
+                nn.init.kaiming_normal_(m.weight.detach())
+                m.bias.detach().zero_()
+
+    def forward(self, x_k):
+        y_hat, o1, o2 = self.encoder(x_k) # downsample from 512 to 64
+        x_hat = self.decoder(y_hat) # 31 channels
+        return y_hat, x_hat
+        
+
+    def calc_loss(self, x_new, y_hat, lz, x_old, y):
+        loss = nn.MSELoss()
+        recon_loss_y = loss(y_hat, y)
+        recon_loss_x = loss(x_new, x_old)
+        # SAM loss
+        sam_loss = calc_sam_loss(x_new, x_old)
+        ### Graph Laplacian Loss
+        x_new = x_new.reshape(x_new.shape[0], x_new.shape[1], -1)
+        lz_xt = linear_operator.utils.sparse.bdsmm(lz, x_new.transpose(1,2))
+        GL = MatmulLinearOperator(x_new, lz_xt)
+        factor = x_new.shape[-1]
+        GL = torch.diagonal(to_dense(GL)/factor, dim1=-2, dim2=-1).sum() # trace
+        return recon_loss_x, sam_loss, recon_loss_y, GL
 
 
+class AutoEncoder3(nn.Module):
+    def __init__(self, in_channels, dec_channels):
+        super(AutoEncoder3, self).__init__()
+        self.in_channels = in_channels
+        self.dec_channels = dec_channels
+        self.downsampler = Encoder(in_channels)
+        self.upsampler = Decoder(dec_channels)
+        # Reinitialize weights using He initialization
+        for m in self.modules():
+            if isinstance(m, torch.nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight.detach())
+                m.bias.detach().zero_()
+            elif isinstance(m, torch.nn.ConvTranspose2d):
+                nn.init.kaiming_normal_(m.weight.detach())
+                m.bias.detach().zero_()
+            elif isinstance(m, torch.nn.Linear):
+                nn.init.kaiming_normal_(m.weight.detach())
+                m.bias.detach().zero_()
+
+    def forward(self, y):
+        x_hat  = self.upsampler(y)
+        # y_hat, o1, o2 = self.encoder(x_k) # downsample from 512 to 64
+        y_hat = self.downsampler(x_hat) # 31 channels
+        return y_hat, x_hat
+        
+
+    def calc_loss(self, x_hat, y_hat, lz, y):
+        loss = nn.MSELoss()
+        recon_loss_y = loss(y_hat, y)
+        # SAM loss
+        sam_loss = calc_sam_loss(y_hat, y)
+        ### Graph Laplacian Loss
+        x_hat = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
+        lz_xt = linear_operator.utils.sparse.bdsmm(lz, x_hat.transpose(1,2))
+        GL = MatmulLinearOperator(x_hat, lz_xt)
+        factor = x_hat.shape[-1]
+        GL = torch.diagonal(to_dense(GL)/factor, dim1=-2, dim2=-1).sum() # trace
+        return sam_loss, recon_loss_y, GL
 
 
 # x = torch.rand(31, 512, 512)
