@@ -65,7 +65,7 @@ for epoch in range(epochs):
         recon_x1 loss: {train_recon_loss_x1/len(train_loader)}, \
         recon_x2 loss: {train_recon_loss_x2/len(train_loader)}, \
         sam_loss loss: {train_sam_loss/len(train_loader)}, \
-        GLaplacian loss: {train_gl_loss/len(train_loader)}")
+        GL loss: {train_gl_loss/len(train_loader)}")
         model.eval()
         test_recon_loss_x2 = 0
         test_sam_loss = 0
@@ -84,14 +84,14 @@ for epoch in range(epochs):
         print(f"test epoch: {epoch} \
         recon_x2 loss: {test_recon_loss_x2/len(test_loader)}, \
         sam_loss loss: {test_sam_loss/len(test_loader)}, \
-        GLaplacian loss: {test_gl_loss/len(test_loader)}")
+        GL loss: {test_gl_loss/len(test_loader)}")
         total_test_loss /= len(test_loader)
         writer.add_scalar("Loss/test", total_test_loss/len(test_loader), epoch)
         writer.add_scalar("Loss_GL/test", test_gl_loss/len(test_loader), epoch)
         writer.add_scalar("Loss_SAM/test", test_sam_loss/len(test_loader), epoch)
     
         if best_model_test_loss > total_test_loss:
-           best_model_test_loss =  best_model_test_loss
+           best_model_test_loss =  total_test_loss
            print("saving ...")
            torch.save(model.state_dict(), model_path)
 writer.close()
