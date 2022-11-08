@@ -115,23 +115,29 @@ class AutoEncoder(nn.Module):
                 nn.init.kaiming_normal_(m.weight.detach())
                 m.bias.detach().zero_()
 
-    def forward(self, x):
-        y_hat = self.encoder(x) # downsample from 512 to 64
-        x_hat = self.decoder(y_hat) # 31 channels
-        return y_hat, x_hat
+    def forward(self, x=None, y=None, z=None, mode="train"):
+        if mode == "train":
+            y_hat = self.encoder(x) # downsample from 512 to 64
+            x_hat = self.decoder(y_hat) # 31 channels
+            return y_hat, x_hat
+        else:
+            x_hat = self.decoder(y)
+            return x_hat
+
 
 def calc_sam_loss(pred, tgt):
     return torch.arccos((pred * tgt)/(torch.linalg.norm(pred)*torch.linalg.norm(tgt))).mean()
 
 def calc_loss(x_hat, y_hat, lz, x, y):
     loss = nn.MSELoss()
-    recon_loss_y = loss(y_hat, y)
+    if isinstance(y_hat, None):
+        recon_loss_y = None
+    else:
+        recon_loss_y = loss(y_hat, y)
     recon_loss_x = loss(x_hat, x)
     # SAM loss
-    # sam_loss = sam(x_hat, x)
     sam_loss = calc_sam_loss(x_hat, x)
     ### Graph Laplacian Loss
-    # pdb.set_trace()
     # x_hat = x_hat * transform.std[None, :, None, None] + transform.mean[None, :, None, None]
     x_hat = x_hat.reshape(x_hat.shape[0], x_hat.shape[1], -1)
     lz_xt = linear_operator.utils.sparse.bdsmm(lz, x_hat.transpose(1,2))
