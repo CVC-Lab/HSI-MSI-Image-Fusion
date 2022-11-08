@@ -2,3 +2,4 @@ sewar
 datasets
 h5py
 pypeln
+linear_operator
