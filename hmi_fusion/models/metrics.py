@@ -4,25 +4,31 @@ from skimage.measure import block_reduce
 import numpy as np
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity, mean_squared_error
 from matplotlib import pyplot as plt
+from .hip.quality_metrics import SpectAngMapper
+from .hip.quality_metrics import cal_ssim
+# from .hip.quality_metrics import SpectAngMapper
 
-def compare_mpsnr(x_true, x_pred):
 
-    x_true, x_pred = x_true.astype(np.float64), x_pred.astype(np.float64)
-    channels = x_true.shape[2]
-    total_psnr = [peak_signal_noise_ratio(x_true[:, :, k], x_pred[:, :, k], data_range=np.max(x_true[:,:,k]) - np.min(x_true[:,:,k]))
-                  for k in range(channels)]
+def compare_mpsnr(x_true, x_pred, mse):
+    total_psnr = 10 * np.log10(255**2/mse)
+
+    # x_true, x_pred = x_true.astype(np.float64), x_pred.astype(np.float64)
+    # channels = x_true.shape[2]
+    # total_psnr = [peak_signal_noise_ratio(x_true[:, :, k], x_pred[:, :, k], data_range=np.max(x_true[:,:,k]) - np.min(x_true[:,:,k]))
+    #               for k in range(channels)]
 
     return np.mean(total_psnr)
 
 
 def compare_mssim(x_true, x_pred, multichannel=True):
 
-    channels = x_true.shape[2]
-    x_true, x_pred = x_true.astype(np.float64), x_pred.astype(np.float64)
-    mssim = [structural_similarity(x_true[:, :, i], x_pred[:, :, i], multichannel=multichannel)
-            for i in range(channels)]
-
-    return np.mean(mssim)
+    # channels = x_true.shape[2]
+    # x_true, x_pred = x_true.astype(np.float64), x_pred.astype(np.float64)
+    # mssim = [structural_similarity(x_true[:, :, i], x_pred[:, :, i], multichannel=multichannel)
+    #         for i in range(channels)]
+    ssim = cal_ssim.ssim(x_true, x_pred, 19000)
+    return ssim
+    # return np.mean(mssim)
 
 
 def find_rmse(img_true, img_pred):
@@ -35,7 +41,7 @@ def find_rmse(img_true, img_pred):
         rmse_per_band.append(np.sqrt(mse))
     rmse = np.sum(rmse_per_band)/n_bands
     mse = np.sum(mse_per_band)/n_bands
-    return rmse
+    return rmse, mse, rmse_per_band
 
     # ref = img_tar * 255.0
     # tar = img_hr * 255.0
@@ -52,25 +58,29 @@ def find_rmse(img_true, img_pred):
 
 
 def compare_sam(x_true, x_pred):
+    sam = SpectAngMapper.sam(x_true, x_pred)
+    # num = 0
+    # sum_sam = 0
+    # x_true, x_pred = x_true.astype(np.float64), x_pred.astype(np.float64)
+    # for x in range(x_true.shape[0]):
+    #     for y in range(x_true.shape[1]):
+    #         tmp_pred = x_pred[x, y].ravel()
+    #         tmp_true = x_true[x, y].ravel()
+    #         if np.linalg.norm(tmp_true) != 0 and np.linalg.norm(tmp_pred) != 0:
+    #             sum_sam += np.arccos(
+    #                 np.inner(tmp_pred, tmp_true) / (np.linalg.norm(tmp_true) * np.linalg.norm(tmp_pred)))
+    #             num += 1
+    # sam_deg = (sum_sam / num) * 180 / np.pi
 
-    num = 0
-    sum_sam = 0
-    x_true, x_pred = x_true.astype(np.float64), x_pred.astype(np.float64)
-    for x in range(x_true.shape[0]):
-        for y in range(x_true.shape[1]):
-            tmp_pred = x_pred[x, y].ravel()
-            tmp_true = x_true[x, y].ravel()
-            if np.linalg.norm(tmp_true) != 0 and np.linalg.norm(tmp_pred) != 0:
-                sum_sam += np.arccos(
-                    np.inner(tmp_pred, tmp_true) / (np.linalg.norm(tmp_true) * np.linalg.norm(tmp_pred)))
-                num += 1
-    sam_deg = (sum_sam / num) * 180 / np.pi
-
-    return sam_deg
+    return sam
 
 
-def compare_ergas(x_true, x_pred, ratio):
-
+def compare_ergas(x_true, x_pred, ratio, rmse_per_band):
+    # n_s, n_s, n_bands = x_true.shape
+    # n_samples = n_s * n_s
+    # mean_y = np.sum(np.sum(x_true, 0), 0)/n_samples
+    # ergas = 100*ratio*np.sqrt(np.sum((rmse_per_band / mean_y)**2)/(n_bands))
+    # return ergas
     x_true, x_pred = img_2d_mat(x_true=x_true, x_pred=x_pred)
     sum_ergas = 0
     for i in range(x_true.shape[0]):

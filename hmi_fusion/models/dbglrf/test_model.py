@@ -2,12 +2,16 @@ from ..metrics import (
     compare_mpsnr,
     compare_mssim,
     find_rmse,
-    compare_sam,
+    # compare_sam,
     compare_ergas
 )
 import torch
+from torchmetrics import SpectralAngleMapper
+from torchmetrics import ErrorRelativeGlobalDimensionlessSynthesis as ERGAS
 # from datasets.cave_dataset import CAVEDataset
 # from .dbglrf import AutoEncoder
+sam = SpectralAngleMapper()
+ergas = ERGAS(ratio=1/8)
 
 def get_final_metric_scores(model, test_dataset, sf):
     test_loader = torch.utils.data.DataLoader(test_dataset,
@@ -18,7 +22,8 @@ def get_final_metric_scores(model, test_dataset, sf):
         for items in test_loader:
             c, x_old, y, z, x, lz, idx = items
             x_old = x_old.cuda()
-            _, x2 = model(x_old)
+            z = z.cuda()
+            _, x2 = model(x_old, z)
             # c, _, y, z, x, lz, idxs = items
             # _, x2 = model(y)
             # x2 = x
@@ -26,11 +31,18 @@ def get_final_metric_scores(model, test_dataset, sf):
             x2 = x2.squeeze()
             x = x.permute(1, 2, 0).detach().cpu().numpy()
             x2 = x2.permute(1, 2, 0).detach().cpu().numpy()
-            total_psnr += compare_mpsnr(x, x2)
+            
             total_ssim += compare_mssim(x, x2)
-            total_rmse += find_rmse(x, x2)
-            total_sam += compare_sam(x, x2)
-            total_ergas += compare_ergas(x, x2, sf)
+            rmse,  mse, rmse_per_band = find_rmse(x, x2)
+            total_rmse += rmse
+            total_psnr += compare_mpsnr(x, x2, mse)
+            total_sam += sam(torch.from_numpy(x).permute(2, 0, 1)[None, ...], 
+                                    torch.from_numpy(x2).permute(2, 0, 1)[None, ...]) * (180/torch.pi)
+            total_ergas += compare_ergas(x, x2, sf, rmse_per_band)
+            # total_sam += compare_sam(x, x2)
+            # total_ergas += ergas(torch.from_numpy(x).permute(2, 0, 1)[None, ...], 
+            #                     torch.from_numpy(x2).permute(2, 0, 1)[None, ...])
+            # total_ergas += compare_ergas(x, x2,1/sf, rmse_per_band)
 
     opt = f"""## Metric scores:
     psnr:{total_psnr/len(test_loader)},

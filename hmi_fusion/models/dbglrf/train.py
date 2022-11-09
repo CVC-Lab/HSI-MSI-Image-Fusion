@@ -1,5 +1,5 @@
 from .dbglrf import AutoEncoder
-from datasets.cave_dataset import CAVEDataset
+from datasets.cave_dataset import CAVEDataset, R
 import numpy as np
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
@@ -13,14 +13,14 @@ import pdb
 accelerator = Accelerator()
 
 ## config
-epochs = 40
-batch_size = 1
+epochs = 150
+batch_size = 2
 in_channels = 31
 dec_channels = 31
 sf = 8
 lr = 1e-3
-model_name = "ae_tv0"
-load_best_model = False
+model_name = "bg1"
+load_best_model = True
 model_path = f"./artifacts/{model_name}/gmodel.pth"
 if not os.path.exists(f"./artifacts/{model_name}"):
     os.makedirs(f"./artifacts/{model_name}")
@@ -29,6 +29,7 @@ torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.enabled = True
 torch.cuda.empty_cache()
 device = accelerator.device
+# device = torch.device("cuda:1")
 
 
 writer = SummaryWriter(f"./artifacts/{model_name}")
@@ -38,9 +39,9 @@ train_loader = torch.utils.data.DataLoader(train_dataset,
                                            shuffle=True, batch_size=batch_size)
 test_loader = torch.utils.data.DataLoader(test_dataset,
                                           shuffle=False, batch_size=batch_size)
-model = AutoEncoder(in_channels=in_channels, dec_channels=dec_channels)#.cuda()
+model = AutoEncoder(in_channels=in_channels, dec_channels=dec_channels, R=R.to(device))#.cuda()
 if load_best_model:
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path), strict=False)
 optimizer = Adam(model.parameters(), lr=lr)
 print("starting training")
 
@@ -64,7 +65,8 @@ for epoch in range(epochs):
         #x_old = x_old.cuda()
         # lz = lz.cuda()
         # y = y.cuda()
-        y_hat, x_new = model(x_old)
+        z = z.to(device)
+        y_hat, x_new = model(x_old, z)
         
         for j, idx in enumerate(idxs):
             train_loader.dataset.x_states[int(idx.item())] = x_new[j, ...].detach().cpu()
@@ -102,7 +104,8 @@ for epoch in range(epochs):
             for items in test_loader:
                 c, x_old, y, z, x_gt, lz, idx = items
                 x_old = x_old.to(device)
-                y_hat, x_new = model(x_old)
+                z = z.to(device)
+                y_hat, x_new = model(x_old, z)
                 recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_new, y_hat, lz.to(device), x_old, y.to(device))
                 total_loss = recon_loss_x + sam_loss + GL 
                 test_recon_loss_x += recon_loss_x.item()
@@ -126,13 +129,14 @@ for epoch in range(epochs):
             print("saving ...")
             torch.save(model.state_dict(), model_path)
             opt = get_final_metric_scores(model, test_dataset, sf)
-            # writer.add_text("metrics", opt, epoch)
+            writer.add_text("metrics", opt, epoch)
             img_tensor = []
             model.eval()
             for i in range(n_random_samples):
                 items = test_dataset[i]
                 c, x_old, y, z, x_gt, lz, idx = items
-                y_hat, x_new = model(x_old[None, ...].to(device))
+                z = z.to(device)
+                y_hat, x_new = model(x_old[None, ...].to(device), z[None, ...])
                 img_tensor.append(x_new.detach().cpu())
 
             for sid in range(n_random_samples):

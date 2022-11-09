@@ -157,6 +157,6 @@ def quality_assessment(ground_truth, estimated, ignore_edges, ratio_ergas):
 
     # s = sf.psnr(ground_truth, estimated)
     # print("PSNR ", s)
-
+    # return 
     # return psnr, rmse, ergas, sam, uiqi, ssim, DD, CCS
-    return
+    # return

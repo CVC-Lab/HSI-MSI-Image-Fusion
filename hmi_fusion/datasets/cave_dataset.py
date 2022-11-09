@@ -29,13 +29,14 @@ R = [[0.005, 0.007, 0.012, 0.015, 0.023, 0.025, 0.030, 0.026, 0.024, 0.019,
 
 R = np.array(R).astype(np.float32)
 R = R.astype(np.float32)
+R = torch.from_numpy(R)
 
 def load_ms_img(ms_path):
     ms_img = []
     for p in ms_path:
         # im = Image.open(p)
-        im = cv2.imread(p, 0)
-        ms_img.append(np.array(im))
+        im = cv2.imread(p, -1)
+        ms_img.append(np.array(im, dtype=np.float32).squeeze())
     # print(np.moveaxis(np.array(ms_img), 0, -1).shape)
     return np.moveaxis(np.array(ms_img), 0, -1)
 
@@ -69,6 +70,7 @@ def load_data(dataset_dir, mode, cl):
     
     for c in os.listdir(dataset_dir):
         if c not in classes: continue
+        if c == "watercolors_ms": continue
         
         c_path = os.path.join(dataset_dir, c, c)
         if not os.path.isdir(c_path): continue
@@ -89,7 +91,7 @@ def load_data(dataset_dir, mode, cl):
                 # os.remove(laplacian_path)
                 laplacian_img = scipy.sparse.load_npz(laplacian_path)
                 
-        # print(ms_path)
+        
         ms_img = load_ms_img(ms_path=ms_path)
         rgb_img = np.array(Image.open(rgb_path))
         data.append((c, ms_path, ms_img, rgb_img, laplacian_img))
@@ -141,6 +143,8 @@ class CAVEDataset(Dataset):
         # need to convert to Tensor
         # c, ms_img, rgb_img = self.data[idx]
         c, _, HR_HSI, HR_MSI, lz = self.data[idx]
+        # print(HR_HSI.max())
+        # print(c)
         # print(HR_HSI.shape, HR_MSI.shape)
         sz = [self.sizeI, self.sizeI]
         sigma = 2.0
@@ -163,9 +167,10 @@ class CAVEDataset(Dataset):
         # hr_hsi = self.transform['x'](hr_hsi.squeeze(0).float())
         # hr_msi = self.transform['z'](hr_msi.squeeze(0).float())
         # lr_hsi = self.transform['y'](lr_hsi.squeeze(0).float())
-        hr_hsi = hr_hsi.squeeze(0).float()/255
-        hr_msi = hr_msi.squeeze(0).float()/255
-        lr_hsi = lr_hsi.squeeze(0).float()/255
+        # print(hr_hsi.max())
+        hr_hsi = hr_hsi.squeeze(0).float()/hr_hsi.max()
+        hr_msi = hr_msi.squeeze(0).float()/hr_msi.max()
+        lr_hsi = lr_hsi.squeeze(0).float()/lr_hsi.max()
 
         if type(self.x_states[idx])  == type(None):
             ipt = lr_hsi.numpy()
@@ -184,7 +189,11 @@ class CAVEDataset(Dataset):
         return c, x_k, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo()), idx#torch.from_numpy(lz.diagonal())# Yh, Ym, X
 
 # dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
-# c, lr_hsi, hr_msi, hr_hsi, lz = dataset[0]
+
+
+# c, x_k, lr_hsi, hr_msi, hr_hsi, lz, idx = dataset[0]
+# pdb.set_trace()
+
 # from inside hmi_fusion run - python -m datasets.cave_dataset and set get_laplacian = True initially
 
 def save_laplacians(dataset_dir, cl, sf, mode="train"):
