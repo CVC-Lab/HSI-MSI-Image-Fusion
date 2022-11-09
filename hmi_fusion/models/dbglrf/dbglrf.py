@@ -18,7 +18,6 @@ import scipy.sparse as ss
 import numpy as np
 import pdb
 from ..hip.fusion.getLaplacian import getLaplacian
-from .tv_layers_for_cv.tv_opt_layers.layers.general_tv_2d_layer import GeneralTV2DLayer
 import scipy
 dtype = torch.FloatTensor
 
@@ -38,7 +37,6 @@ class Decoder(nn.Module):
         self.d_bn_2 = nn.BatchNorm2d(dec_channels)
         self.d_conv_3 = nn.Conv2d(dec_channels*3, dec_channels, 
                                   kernel_size=(3, 3), stride=(1, 1), padding=1)
-        self.tv_layer = GeneralTV2DLayer(lmbd_init=30,num_iter=10)
         self.d_bn_3 = nn.BatchNorm2d(dec_channels)
         
 
@@ -60,7 +58,6 @@ class Decoder(nn.Module):
         x = F.interpolate(x, scale_factor=2)
         x = self.d_conv_3(x)
         x = F.leaky_relu(x, negative_slope=0.2, inplace=True)
-        x = self.tv_layer(x)
         x = self.d_bn_3(x)  
         return x
 
