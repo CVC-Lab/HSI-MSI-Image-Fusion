@@ -31,6 +31,7 @@ R = np.array(R).astype(np.float32)
 R = R.astype(np.float32)
 R = torch.from_numpy(R)
 
+YIQ = torch.Tensor([[0.299 ,0.587 ,0.114], [0.5959 ,-0.2746 ,-0.3213], [0.2115 ,-0.5227 ,0.3112]]) # 3 x3
 def load_ms_img(ms_path):
     ms_img = []
     for p in ms_path:
@@ -93,7 +94,8 @@ def load_data(dataset_dir, mode, cl):
                 
         
         ms_img = load_ms_img(ms_path=ms_path)
-        rgb_img = np.array(Image.open(rgb_path))
+        rgb_img = cv2.imread(rgb_path, -1)
+        # rgb_img = np.array(Image.open(rgb_path))
         data.append((c, ms_path, ms_img, rgb_img, laplacian_img))
     return classes, class2id, data
 
@@ -168,6 +170,7 @@ class CAVEDataset(Dataset):
         # hr_msi = self.transform['z'](hr_msi.squeeze(0).float())
         # lr_hsi = self.transform['y'](lr_hsi.squeeze(0).float())
         # print(hr_hsi.max())
+        max_vals = (lr_hsi.max(), hr_msi.max(), hr_hsi.max())
         hr_hsi = hr_hsi.squeeze(0).float()/hr_hsi.max()
         hr_msi = hr_msi.squeeze(0).float()/hr_msi.max()
         lr_hsi = lr_hsi.squeeze(0).float()/lr_hsi.max()
@@ -179,14 +182,25 @@ class CAVEDataset(Dataset):
             # print(x_k.shape)
             for c in range(x_k.shape[0]):
                 x_k[c, :, :] = torch.FloatTensor(cv2.resize(ipt[c, :, :], (N1, N2), interpolation=cv2.INTER_CUBIC))
+
+            yiq_downsampled = torch.zeros(3, 64, 64)
+            C, N1, N2 = hr_msi.shape
+            yiq = (YIQ @ hr_msi.reshape(C, -1)).reshape(C, N1, N2)
+            # yiq_downsampled = torch.FloatTensor(
+            #     cv2.resize(yiq.permute(1, 2, 0).numpy(), (64, 64), interpolation=cv2.INTER_CUBIC)).permute(2, 0, 1)[0][None, ...]
+            # Zd = torch.FloatTensor(cv2.resize(hr_msi.permute(1, 2, 0).numpy(), (64, 64), interpolation=cv2.INTER_CUBIC)).permute(2, 0, 1)
+            yiq_downsampled = yiq
+            Zd = hr_msi
         else:
             x_k = self.x_states[idx]
+            yiq_downsampled = None
         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
         # [31, 64, 64], [31, 512, 512], [3, 512, 512]
         # to_torch_sparse(lz.tocoo())
         # c, y, z, x, lz
         # c, x_old, y, z, _, lz, idx
-        return c, x_k, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo()), idx#torch.from_numpy(lz.diagonal())# Yh, Ym, X
+        return lr_hsi, hr_msi, hr_hsi, max_vals
+        # return c, x_k, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo()), yiq_downsampled, Zd, idx#torch.from_numpy(lz.diagonal())# Yh, Ym, X
 
 # dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
 

@@ -1,4 +1,4 @@
-from .dbglrf import AutoEncoder
+from .dbglrf import AutoEncoderAmazing
 from datasets.cave_dataset import CAVEDataset, R
 import numpy as np
 from torch.optim import Adam
@@ -39,7 +39,7 @@ train_loader = torch.utils.data.DataLoader(train_dataset,
                                            shuffle=True, batch_size=batch_size)
 test_loader = torch.utils.data.DataLoader(test_dataset,
                                           shuffle=False, batch_size=batch_size)
-model = AutoEncoder(in_channels=in_channels, dec_channels=dec_channels, R=R.to(device))#.cuda()
+model = AutoEncoderAmazing(in_channels=in_channels, dec_channels=dec_channels, R=R.to(device))#.cuda()
 if load_best_model:
     if os.path.exists(model_path):
         model.load_state_dict(torch.load(model_path), strict=False)
@@ -62,27 +62,23 @@ for epoch in range(epochs):
     total_train_loss = 0
     for items in train_loader:
         optimizer.zero_grad()
-        c, x_old, y, z, x, lz, idxs = items
+        c, x_old, y, z, _, lz, idxs = items
         #x_old = x_old.cuda()
         # lz = lz.cuda()
-        # y = y.cuda()
-        z = z.to(device)
         lz = lz.to(device)
-        y_hat, x_new = model(x_old, z, lz)
+        y = y.to(device)
+        z = z.to(device)
+        y_hat, x_hat = model(y, z)
+        sam_loss, recon_loss_y, GL = model.calc_loss(x_hat, y_hat, lz, y)
         
-        for j, idx in enumerate(idxs):
-            train_loader.dataset.x_states[int(idx.item())] = x_new[j, ...].detach().cpu()
-        
-        recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_new, y_hat, lz.detach(), x.to(device), y)
-        total_loss = alpha*recon_loss_x + beta*recon_loss_y + gamma*sam_loss + delta*GL 
+        total_loss = beta*recon_loss_y + gamma*sam_loss + delta*GL 
         # total_loss.backward()
         accelerator.backward(total_loss)
         optimizer.step()
-        train_recon_loss_x += recon_loss_x.item()
         train_recon_loss_y += recon_loss_y.item()
         train_sam_loss += sam_loss.item() 
         train_gl_loss += GL.item()
-        total_train_loss += (recon_loss_x + sam_loss + GL).item()
+        total_train_loss += (recon_loss_y + sam_loss + GL).item()
 
     writer.add_scalar("Loss/train", total_train_loss/len(train_loader), epoch)
     writer.add_scalar("Loss_GL/train", train_gl_loss/len(train_loader), epoch)
@@ -90,7 +86,6 @@ for epoch in range(epochs):
     # get eval loss every 2 epochs
     if epoch % 2 == 0:
         print(f"train epoch: {epoch} \
-        recon_x loss: {train_recon_loss_x/len(train_loader)}, \
         recon_y loss: {train_recon_loss_y/len(train_loader)}, \
         sam_loss loss: {train_sam_loss/len(train_loader)}, \
         GLaplacian loss: {train_gl_loss/len(train_loader)}")
@@ -105,20 +100,20 @@ for epoch in range(epochs):
         with torch.no_grad():
             for items in test_loader:
                 c, x_old, y, z, x_gt, lz, idx = items
-                x_old = x_old.to(device)
+                # x_old = x_old.to(device)
+                y = y.to(device)
                 z = z.to(device)
                 lz = lz.to(device)
-                y_hat, x_new = model(x_old, z, lz)
-                recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_new, y_hat, lz, x_gt.to(device), y.to(device))
-                total_loss = recon_loss_x + sam_loss + GL 
-                test_recon_loss_x += recon_loss_x.item()
+                y_hat, x_hat = model(y, z)
+                sam_loss, recon_loss_y, GL = model.calc_loss(x_hat, y_hat, lz, y)
+                total_loss = recon_loss_y + sam_loss + GL 
+                # test_recon_loss_x += recon_loss_x.item()
                 test_recon_loss_y += recon_loss_y.item()
                 test_sam_loss += sam_loss.item() 
                 test_gl_loss += GL.item()
                 total_test_loss = total_loss.item()
 
         print(f"test epoch: {epoch} \
-        recon_x loss: {test_recon_loss_x/len(test_loader)}, \
         recon_y loss: {test_recon_loss_y/len(test_loader)}, \
         sam_loss loss: {test_sam_loss/len(test_loader)}, \
         GLaplacian loss: {test_gl_loss/len(test_loader)}")
@@ -138,10 +133,11 @@ for epoch in range(epochs):
             for i in range(n_random_samples):
                 items = test_dataset[i]
                 c, x_old, y, z, x_gt, lz, idx = items
+                y = y.to(device)
                 z = z.to(device)
-                lz =lz.to(device)
+                # lz =lz.to(device)
 
-                y_hat, x_new = model(x_old[None, ...].to(device), z[None, ...], lz[None, ...])
+                y_hat, x_new = model(y[None, ...].to(device), z[None, ...])
                 img_tensor.append(x_new.detach().cpu())
 
             for sid in range(n_random_samples):

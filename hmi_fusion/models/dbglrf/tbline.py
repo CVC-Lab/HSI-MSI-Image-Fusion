@@ -1,25 +1,25 @@
-from .dbglrf import AutoEncoder
+from .dbglrf import AutoEncoder, Baseline
 from datasets.cave_dataset import CAVEDataset, R
 import numpy as np
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 from .test_model import get_final_metric_scores
 from .viz_utils import image_grid, plot_to_image
-from accelerate import Accelerator
+# from accelerate import Accelerator
 import torch.nn.functional as F
 import torch
 import os
 import pdb
-accelerator = Accelerator()
+# accelerator = Accelerator()
 # torch.autograd.detect_anomaly()
 ## config
 epochs = 300
-batch_size = 2
+batch_size = 1
 in_channels = 31
 dec_channels = 31
 sf = 8
 lr = 1e-4
-model_name = "bg3"
+model_name = "bline"
 load_best_model = False
 model_path = f"./artifacts/{model_name}/gmodel.pth"
 if not os.path.exists(f"./artifacts/{model_name}"):
@@ -28,9 +28,11 @@ if not os.path.exists(f"./artifacts/{model_name}"):
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.enabled = True
 torch.cuda.empty_cache()
-device = accelerator.device
-# device = torch.device("cuda:1")
 
+# accelerator.device = torch.device("cuda:1")
+# device = accelerator.device
+device = torch.device("cuda:1")
+torch.cuda.set_device(device)
 
 writer = SummaryWriter(f"./artifacts/{model_name}")
 train_dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
@@ -39,15 +41,16 @@ train_loader = torch.utils.data.DataLoader(train_dataset,
                                            shuffle=True, batch_size=batch_size)
 test_loader = torch.utils.data.DataLoader(test_dataset,
                                           shuffle=False, batch_size=batch_size)
-model = AutoEncoder(in_channels=in_channels, dec_channels=dec_channels, R=R.to(device))#.cuda()
+model = Baseline(in_channels=in_channels, dec_channels=dec_channels, R=R.to(device))#.cuda()
 if load_best_model:
     if os.path.exists(model_path):
         model.load_state_dict(torch.load(model_path), strict=False)
 optimizer = Adam(model.parameters(), lr=lr)
 print("starting training")
+model = model.to(device)
 
 
-model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
+# model, optimizer, train_loader = accelerator.prepare(model, optimizer, train_loader)
 
 alpha, beta, gamma, delta = 1, 1, 1.5, 1
 best_model_test_loss = np.inf
@@ -62,24 +65,24 @@ for epoch in range(epochs):
     total_train_loss = 0
     for items in train_loader:
         optimizer.zero_grad()
-        c, x_old, y, z, x, lz, idxs = items
+        c, x_old, y, z, _, lz, idxs = items
         #x_old = x_old.cuda()
         # lz = lz.cuda()
         # y = y.cuda()
+        x_old = x_old.to(device)
         z = z.to(device)
         lz = lz.to(device)
-        y_hat, x_new = model(x_old, z, lz)
+        x_new = model(x_old, z, lz)
+        # for j, idx in enumerate(idxs):
+        #     train_loader.dataset.x_states[int(idx.item())] = x_new[j, ...].detach().cpu()
         
-        for j, idx in enumerate(idxs):
-            train_loader.dataset.x_states[int(idx.item())] = x_new[j, ...].detach().cpu()
-        
-        recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_new, y_hat, lz.detach(), x.to(device), y)
-        total_loss = alpha*recon_loss_x + beta*recon_loss_y + gamma*sam_loss + delta*GL 
-        # total_loss.backward()
-        accelerator.backward(total_loss)
+        recon_loss_x, sam_loss, GL = model.calc_loss(x_new, lz, x_old)
+        total_loss = alpha*recon_loss_x + gamma*sam_loss + delta*GL 
+        total_loss.backward()
+        # accelerator.backward(total_loss)
         optimizer.step()
         train_recon_loss_x += recon_loss_x.item()
-        train_recon_loss_y += recon_loss_y.item()
+        # train_recon_loss_y += recon_loss_y.item()
         train_sam_loss += sam_loss.item() 
         train_gl_loss += GL.item()
         total_train_loss += (recon_loss_x + sam_loss + GL).item()
@@ -91,7 +94,6 @@ for epoch in range(epochs):
     if epoch % 2 == 0:
         print(f"train epoch: {epoch} \
         recon_x loss: {train_recon_loss_x/len(train_loader)}, \
-        recon_y loss: {train_recon_loss_y/len(train_loader)}, \
         sam_loss loss: {train_sam_loss/len(train_loader)}, \
         GLaplacian loss: {train_gl_loss/len(train_loader)}")
         # pdb.set_trace()
@@ -108,18 +110,17 @@ for epoch in range(epochs):
                 x_old = x_old.to(device)
                 z = z.to(device)
                 lz = lz.to(device)
-                y_hat, x_new = model(x_old, z, lz)
-                recon_loss_x, sam_loss, recon_loss_y, GL = model.calc_loss(x_new, y_hat, lz, x_gt.to(device), y.to(device))
+                x_new = model(x_old, z, lz)
+                recon_loss_x, sam_loss, GL = model.calc_loss(x_new, lz, x_old)
                 total_loss = recon_loss_x + sam_loss + GL 
                 test_recon_loss_x += recon_loss_x.item()
-                test_recon_loss_y += recon_loss_y.item()
+                # test_recon_loss_y += recon_loss_y.item()
                 test_sam_loss += sam_loss.item() 
                 test_gl_loss += GL.item()
                 total_test_loss = total_loss.item()
 
         print(f"test epoch: {epoch} \
         recon_x loss: {test_recon_loss_x/len(test_loader)}, \
-        recon_y loss: {test_recon_loss_y/len(test_loader)}, \
         sam_loss loss: {test_sam_loss/len(test_loader)}, \
         GLaplacian loss: {test_gl_loss/len(test_loader)}")
         total_test_loss /= len(test_loader)
@@ -140,8 +141,7 @@ for epoch in range(epochs):
                 c, x_old, y, z, x_gt, lz, idx = items
                 z = z.to(device)
                 lz =lz.to(device)
-
-                y_hat, x_new = model(x_old[None, ...].to(device), z[None, ...], lz[None, ...])
+                x_new = model(x_old[None, ...].to(device), z[None, ...], lz[None, ...])
                 img_tensor.append(x_new.detach().cpu())
 
             for sid in range(n_random_samples):

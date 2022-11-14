@@ -16,7 +16,8 @@ import os
 def load_ms_img(ms_path):
     ms_img = []
     for p in ms_path:
-        im = Image.open(p)
+        # im = Image.open(p)
+        im = cv2.imread(p, -1)
         ms_img.append(np.array(im))
     return np.moveaxis(np.array(ms_img), 0, -1)
 
@@ -55,6 +56,7 @@ def load_data(dataset_dir, mode="train", train_split=0.6):
     # loaded_data.append([mat['lbl'], mat['ref']])
     for file in data:
         mat = sio.loadmat(file)
+        # pdb.set_trace()
         loaded_data.append([mat['lbl'], mat['ref'], 
         os.path.splitext(os.path.basename(file))[0]])
 
@@ -66,7 +68,7 @@ class HarvardDataset(Dataset):
         super().__init__()
         self.data = load_data(dataset_dir, mode)
         # img size - 1040, 1392
-        self.sz = self.data[0][0].shape
+        self.sz = [1024, 1024]
         self.factor = sf # scaling factor
 
     def H_z(self, z, factor, fft_B):
@@ -100,12 +102,12 @@ class HarvardDataset(Dataset):
 
     def __getitem__(self, idx):
         HR_HSI, HR_MSI, name = self.data[idx]
-        size_r = HR_MSI.shape[0]
+        size_r = 1024
         HR_HSI = HR_HSI[:size_r, :size_r]
         HR_MSI = HR_MSI[:size_r, :size_r, :]
-
+        print(name)
         # sz = [self.sizeI, self.sizeI]
-        # print(HR_HSI.shape)
+        print(HR_HSI.shape, HR_MSI.shape)
         sz = self.sz
         sigma = 2.0
         fft_B, fft_BT = para_setting('gaussian_blur', self.factor, sz, sigma)
@@ -115,25 +117,30 @@ class HarvardDataset(Dataset):
         px      = random.randint(0, self.sz[0]-512)
         py      = random.randint(0, self.sz[1]-512)
         # print("hrhsi before:", HR_HSI.shape)
-        hr_hsi = HR_HSI[..., None]
+        hr_hsi = HR_HSI[None, ...]
         hr_msi = HR_MSI
 
-        # print("hrhsi after:", hr_hsi.shape)
-        hr_hsi = torch.FloatTensor(hr_hsi.copy()).permute(2,0,1).unsqueeze(0)
+        print("hrhsi after:", hr_hsi.shape)
+        hr_hsi = torch.FloatTensor(hr_hsi.copy())#.permute(2,0,1)#.unsqueeze(0)
         hr_msi = torch.FloatTensor(hr_msi.copy()).permute(2,0,1).unsqueeze(0)
+        print("fftB:", fft_B.shape, "hr_hsi", hr_hsi.shape)
         lr_hsi = self.H_z(hr_hsi, self.factor, fft_B)
+
         lr_hsi = torch.FloatTensor(lr_hsi)
 
-        hr_hsi = hr_hsi.squeeze(0)
-        hr_msi = hr_msi.squeeze(0)
-        lr_hsi = lr_hsi.squeeze(0)
+        hr_hsi = hr_hsi.squeeze(0)/hr_hsi.max()
+        hr_msi = hr_msi.squeeze(0)/hr_msi.max()
+        lr_hsi = lr_hsi.squeeze(0)/lr_hsi.max()
         # print(f'lr_hsi.shape: {lr_hsi.shape}, hr_hsi.shape: {hr_hsi.shape}, hr_msi.shape: {hr_msi.shape}')
         # lr_hsi.shape: torch.Size([1, 130, 174]), hr_hsi.shape: torch.Size([1, 1040, 1392]), hr_msi.shape: torch.Size([31, 1040, 1392])
-        return name, lr_hsi, hr_msi, hr_hsi # Yh, Ym, X
+        # lr_hsi, hr_msi, hr_hsi
+        return lr_hsi, hr_msi, hr_hsi # Yh, Ym, X
+
+        # return c, x_k, lr_hsi, hr_msi, hr_hsi, torch.T, yiq_downsampled, Zd, idx
 
 
 
 # load_data("./datasets/data/Harvard")
 
-# dataset = HarvardDataset("./data/Harvard", mode="test")
+# dataset = HarvardDataset("./datasets/data/Harvard", mode="test")
 # pdb.set_trace()
