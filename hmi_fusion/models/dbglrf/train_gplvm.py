@@ -39,9 +39,13 @@ class VAE(nn.Module):
         self.e_fc2_var = nn.Linear(input_channels, latent_dim)
         
         # we can use kumarswamy, currently using simple gaussian
-        self.d_fc1 = nn.Linear(latent_dim, input_channels)
-        self.d_fc2 = nn.Linear(input_channels, input_channels)
-        self.d_fc3 = nn.Linear(input_channels, input_channels)
+        self.d_fc1_m = nn.Linear(latent_dim, input_channels)
+        self.d_fc2_m = nn.Linear(input_channels, input_channels)
+        self.d_fc3_m = nn.Linear(input_channels, input_channels)
+
+        self.d_fc1_var = nn.Linear(latent_dim, input_channels)
+        self.d_fc2_var = nn.Linear(input_channels, input_channels)
+        self.d_fc3_var = nn.Linear(input_channels, input_channels)
 
     def encode(self, x):
         x_m =  self.e_fc1_mean(x)
@@ -55,13 +59,20 @@ class VAE(nn.Module):
         x_var = F.gelu(x_var)
         return x_m, x_var.exp()
 
-    def decoder(self, x):
-        x = self.d_fc1(x)
-        x = F.gelu(x)
-        x = self.d_fc2(x)
-        x = F.gelu(x)
-        x = self.d_fc3(x)
-        return x
+    def decode(self, x):
+        x_m = self.d_fc1_m(x)
+        x_m = F.gelu(x_m)
+        x_m = self.d_fc2_m(x_m)
+        x_m = F.gelu(x_m)
+        x_m = self.d_fc3_m(x_m)
+
+        x_var = self.d_fc1_var(x)
+        x_var = F.gelu(x_var)
+        x_var = self.d_fc2_var(x_var)
+        x_var = F.gelu(x_var)
+        x_var = self.d_fc3_var(x_var)
+
+        return x_m, x_var.exp()
 
     def forward(self, x):
         x_m, x_var = self.encode(x)
@@ -69,14 +80,11 @@ class VAE(nn.Module):
         x_reco = self.decode(z)
         return x_reco, z
 
-    # def elbo_loss(self, x, x_reco, x_m, x_var):
-    #     mse_loss = ((x -  x_reco)**2).sum(-1)
-
-
-
 
 class bGPLVM(BayesianGPLVM):
     def __init__(self, n, data_dim, latent_dim, n_inducing, pca=False):
+
+        
         self.n = n
         self.batch_shape = torch.Size([data_dim])
 
@@ -103,23 +111,62 @@ class bGPLVM(BayesianGPLVM):
         # X = MAPLatentVariable(n, latent_dim, X_init, prior_x)
 
         super().__init__(X, q_f)
-
         # Kernel (acting on latent dimensions)
         self.mean_module = ZeroMean(ard_num_dims=latent_dim)
         self.covar_module = ScaleKernel(RBFKernel(ard_num_dims=latent_dim))
         self.scale_to_bounds = ScaleToBounds(-1., 1.)
 
-    def forward(self, X):
-        X = self.scale_to_bounds(X)
-        mean_x = self.mean_module(X)
-        covar_x = self.covar_module(X)
-        dist = MultivariateNormal(mean_x, covar_x)
-        return dist
+    def forward(self, Zq):
+        Zq = self.scale_to_bounds(Zq)
+        mean_zq = self.mean_module(Zq)
+        covar_zq = self.covar_module(Zq)
+        # pdb.set_trace()
+        Zdist = MultivariateNormal(mean_zq, covar_zq)
+        return Zdist
+        
 
     def _get_batch_idx(self, batch_size):
         valid_indices = np.arange(self.n)
         batch_indices = np.random.choice(valid_indices, size=batch_size, replace=False)
         return np.sort(batch_indices)
+
+
+class SGPVAE(nn.Module):
+    def __init__(self, vae, gplvm, ) -> None:
+        super().__init__()
+        self.vae = vae
+        self.gplvm = gplvm
+    
+    def forward(self, X, k):
+        Zqm, Zqv  = self.vae.encode(X)
+
+        # pdb.set_trace()
+        Zq_dist = dist.Normal(Zqm, Zqv)
+        Zq = Zq_dist.rsample(torch.Size([k]))
+        ## GP Prior
+        Zdist = self.gplvm(Zq)
+        # sample from dist and then decode
+        Z = Zdist.rsample(torch.Size([k]))
+        ## decode GP prediction
+        S, latent_size, batch_size = Z.shape
+        Z = Z.permute(0, 2, 1)
+        Z = Z.reshape(S*batch_size, latent_size)
+        Ym, Yvar = self.vae.decode(Z)
+        Ydist = dist.Normal(Ym, Yvar)
+        
+        return Ydist, Zdist, Zq_dist, Zq, Z
+
+    def calc_loss(self, Ydist, Zq_dist, Zq, Y):
+        lp_zq = dist.Normal(torch.zeros_like(Zq), torch.ones_like(Zq)).log_prob(Zq).sum(-1)
+
+        # pdb.set_trace()
+        lq_zq_x = Zq_dist.log_prob(Zq).sum(-1)
+        # lq_z_x = Zdist.log_prob(Z).sum(-1)
+        # pdb.set_trace()
+        lp_x_z = Ydist.log_prob(Y.T).sum(-1)
+        lw = lp_x_z + lp_zq - lq_zq_x
+        return -lw.sum(0).mean(0)
+
 
 
 device = torch.device("cuda:0")
@@ -137,27 +184,29 @@ pca = False
 
 
 # Model
-gplvm = bGPLVM(N, data_dim=vae_latent_dim, latent_dim=vae_latent_dim, n_inducing=n_inducing, pca=pca)
-
-vae = VAE(31, latent_dim=20, gplvm=gplvm)
+vae = VAE(31, latent_dim=20)
+gplvm = bGPLVM(n=N, data_dim=vae_latent_dim, latent_dim=vae_latent_dim, n_inducing=n_inducing, pca=pca)
+sgpvae = SGPVAE(vae, gplvm)
 # Likelihood
-likelihood = GaussianLikelihood(batch_shape=model.batch_shape)
+likelihood = GaussianLikelihood(batch_shape=gplvm.batch_shape)
 
 if os.path.exists( "./artifacts/YGP.pt"):
     loaded = torch.load("./artifacts/YGP.pt")
-    model.load_state_dict(loaded["model_state_dict"])
+    sgpvae.load_state_dict(loaded["model_state_dict"],   strict=False)
     likelihood.load_state_dict(loaded['likelihood'])
     print("loaded models!")
 
-model = model.to(device)
+# vae.to(device)
+# gplvm = gplvm.to(device)
+sgpvae = sgpvae.to(device)
 likelihood = likelihood.to(device)
 
 # Declaring the objective to be optimised along with optimiser
 # (see models/latent_variable.py for how the additional loss terms are accounted for)
-mll = VariationalELBO(likelihood, model, num_data=new_ds.shape[0])# total training points - 1000
+mll = VariationalELBO(likelihood, gplvm, num_data=new_ds.shape[0])# total training points - 1000
 
 optimizer = torch.optim.Adam([
-    {'params': model.parameters()},
+    {'params': sgpvae.parameters()},
     {'params': likelihood.parameters()}
 ], lr=0.001)
 
@@ -168,24 +217,41 @@ print("num_batches:", num_batches)
 epochs = 10
 iterator = range(epochs*num_batches if not smoke_test else 4)
 total_loss = 0
-model.train()
-likelihood.train()
 
+sgpvae.train()
+likelihood.train()
+total_sgp_loss = 0
+total_vae_loss = 0
 for i in tqdm(iterator):
-    batch_index = model._get_batch_idx(batch_size)
+    batch_index = gplvm._get_batch_idx(batch_size)
     optimizer.zero_grad()
-    sample = model.sample_latent_variable()  # a full sample returns latent x across all N
-    sample_batch = sample[batch_index]
-    output_batch = model(sample_batch)
-    target = new_ds[batch_index].T
-    # normalize target between -1 and 1
-    target = target - target.min(1).values[..., None] / target.max(1).values[..., None]
-    loss = -mll(output_batch, target.to(device)).sum()
+    # sample = gplvm.sample_latent_variable()  # a full sample returns latent x across all N
+    # sample_batch = sample[batch_index]
+    sample_batch = new_ds[batch_index].to(device)
+    Ydist, Zdist, Zq_dist, Zq, Z = sgpvae(sample_batch, k=1)
+    
+    Y = new_ds[batch_index].T
+    # normalize Y between -1 and 1
+    Y = Y - Y.min(1).values[..., None] / Y.max(1).values[..., None]
+    loss_vae = sgpvae.calc_loss(Ydist, Zq_dist, Zq, Y.to(device))
+    
+    loss_sgp = -mll(Zdist, Z.permute(1, 0)).sum() # SGP ELBO Loss
+    
+    loss = loss_vae + loss_sgp
+    total_sgp_loss += loss_sgp.item()
+    total_vae_loss += loss_vae.item()
     total_loss += loss.item()
     loss_list.append(loss.item())
+    if (i+1) == 100:
+        sgpvae.vae.eval()
 
     loss.backward()
     optimizer.step()
+    if (i+1) % (50) == 0:
+        print('Loss: ' + str(float(np.round(total_loss/(i+1),2))) + 
+        ' sgp_loss ' + str(float(np.round(total_sgp_loss/(i+1),2))) +
+        ' vae_loss ' + str(float(np.round(total_vae_loss/(i+1),2))) 
+        + ", iter no: " + str((i)))
     if (i+1) % (num_batches) == 0:
         print('Loss: ' + str(float(np.round(total_loss/num_batches,2))) + ", epoch no: " + str((i) // num_batches))
         total_loss = 0    
@@ -193,7 +259,7 @@ for i in tqdm(iterator):
         torch.save(
             {
                 'iter': i,
-                'model_state_dict': model.state_dict(),
+                'sgpvae_state_dict': sgpvae.state_dict(),
                 'likelihood': likelihood.state_dict()
                 }
                 , "./artifacts/YGP.pt")
