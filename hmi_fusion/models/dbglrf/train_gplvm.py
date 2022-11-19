@@ -139,8 +139,6 @@ class SGPVAE(nn.Module):
     
     def forward(self, X, k):
         Zqm, Zqv  = self.vae.encode(X)
-
-        # pdb.set_trace()
         Zq_dist = dist.Normal(Zqm, Zqv)
         Zq = Zq_dist.rsample(torch.Size([k]))
         ## GP Prior
@@ -153,16 +151,11 @@ class SGPVAE(nn.Module):
         Z = Z.reshape(S*batch_size, latent_size)
         Ym, Yvar = self.vae.decode(Z)
         Ydist = dist.Normal(Ym, Yvar)
-        
         return Ydist, Zdist, Zq_dist, Zq, Z
 
     def calc_loss(self, Ydist, Zq_dist, Zq, Y):
         lp_zq = dist.Normal(torch.zeros_like(Zq), torch.ones_like(Zq)).log_prob(Zq).sum(-1)
-
-        # pdb.set_trace()
         lq_zq_x = Zq_dist.log_prob(Zq).sum(-1)
-        # lq_z_x = Zdist.log_prob(Z).sum(-1)
-        # pdb.set_trace()
         lp_x_z = Ydist.log_prob(Y.T).sum(-1)
         lw = lp_x_z + lp_zq - lq_zq_x
         return -lw.sum(0).mean(0)
@@ -233,8 +226,7 @@ for i in tqdm(iterator):
     Y = new_ds[batch_index].T
     # normalize Y between -1 and 1
     Y = Y - Y.min(1).values[..., None] / Y.max(1).values[..., None]
-    loss_vae = sgpvae.calc_loss(Ydist, Zq_dist, Zq, Y.to(device))
-    
+    loss_vae = sgpvae.calc_loss(Ydist, Zq_dist, Zq, Y.to(device)) # VAE ELBO Loss
     loss_sgp = -mll(Zdist, Z.permute(1, 0)).sum() # SGP ELBO Loss
     
     loss = loss_vae + loss_sgp

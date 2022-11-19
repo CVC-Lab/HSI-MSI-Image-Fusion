@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from datasets.cave_dataset import CAVEDataset, R
 # from datasets.cave_dataset import HarvardDataset, R
 import os
+import pdb
 from models.metrics import (
     compare_mpsnr,
     compare_mssim,
@@ -24,13 +25,13 @@ sam = SpectralAngleMapper()
 ergas = ERGAS(ratio=1/8)
 
 # dataset = CAVEDataset("../datasets/data/CAVE", None, mode="train")
-dataset = CAVEDataset("../datasets/data/CAVE", None, mode="train")
+dataset = CAVEDataset("./datasets/data/CAVE", None, mode="train")
 model = torch.nn.Linear(3, 31, bias=False)
 optimizer = Adam(model.parameters(), lr=1e-3)
 model.train()
 mse = torch.nn.MSELoss()
 
-model_path = "../artifacts/R_new.pt"
+model_path = "./artifacts/R_new.pt"
 if os.path.exists(model_path):
     model.load_state_dict(torch.load(model_path))
 
@@ -50,26 +51,27 @@ if os.path.exists(model_path):
 
 # print(baseline_total/len(dataset))
 
-# n_epochs =100
+n_epochs =100
 
 # model.train()
 # # best_mse_loss = baseline_total/len(dataset)
 # best_mse_loss = 0.002
-# for epoch in range(n_epochs):
-#     total_loss = 0
-#     total_mse_loss = 0
-#     total_sam_loss = 0
-#     for items in dataset:
-#         optimizer.zero_grad()
-#         # c, x_k, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo()), yiq_downsampled, Zd, idx
-#         y, z, x_gt  = items
-#         z_ipt = z.numpy()
-#         Zd = torch.zeros(z.shape[0], y.shape[1], y.shape[2])
-#         C, N1, N2 = Zd.shape
-#         for c in range(Zd.shape[0]):
-#             Zd[c, :, :] = torch.FloatTensor(cv2.resize(z_ipt[c, :, :], (N1, N2), interpolation=cv2.INTER_CUBIC))
-#         Zd = Zd.permute(1, 2, 0).reshape(-1, C)[None, ...]
-#         y_pred = model(Zd)
+for epoch in range(n_epochs):
+    total_loss = 0
+    total_mse_loss = 0
+    total_sam_loss = 0
+    for items in dataset:
+        optimizer.zero_grad()
+        # c, x_k, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo()), yiq_downsampled, Zd, idx
+        y, z, x_gt, _  = items
+        pdb.set_trace()
+        z_ipt = z.numpy()
+        Zd = torch.zeros(z.shape[0], y.shape[1], y.shape[2])
+        C, N1, N2 = Zd.shape
+        for c in range(Zd.shape[0]):
+            Zd[c, :, :] = torch.FloatTensor(cv2.resize(z_ipt[c, :, :], (N1, N2), interpolation=cv2.INTER_CUBIC))
+        Zd = Zd.permute(1, 2, 0).reshape(-1, C)[None, ...]
+        y_pred = model(Zd)
 #         # y_pred = (newR @ Zd.reshape(C, -1)).reshape(*y.shape)
 #         y_pred = y_pred.transpose(1, 2).reshape(1, y.shape[0], N1, N2)
 #         # sam_loss = torch.nan_to_num(sam(y_pred, y[None, ...]), nan=0.0, posinf=1.0)
@@ -93,12 +95,13 @@ if os.path.exists(model_path):
 
 model.eval()
 newR = model.weight
-test_dataset = CAVEDataset("../datasets/data/CAVE", None, mode="test")
+test_dataset = CAVEDataset("./datasets/data/CAVE", None, mode="test")
 
 total_psnr, total_ssim, total_rmse, total_sam, total_ergas =0,0,0,0,0
 with torch.no_grad():
     for items in test_dataset:
-        y, z, x  = items
+        y, z, x, _  = items
+        pdb.set_trace()
         zc, N1, N2 = z.shape 
         x2 = (newR @ z.reshape(zc, -1)).reshape(y.shape[0], N1, N2)
     

@@ -20,17 +20,18 @@ from models.metrics import (
 )
 from torchmetrics import SpectralAngleMapper
 from torchmetrics import ErrorRelativeGlobalDimensionlessSynthesis as ERGAS
+from tqdm import tqdm
 sam = SpectralAngleMapper()
 ergas = ERGAS(ratio=1/8)
 import pdb
 # dataset = CAVEDataset("../datasets/data/CAVE", None, mode="train")
-dataset = HarvardDataset("../datasets/data/Harvard", mode="train")
+dataset = HarvardDataset("./datasets/data/Harvard", mode="train")
 model = torch.nn.Linear(3, 31, bias=False)
 optimizer = Adam(model.parameters(), lr=1e-3)
 model.train()
 mse = torch.nn.MSELoss()
-
-model_path = "../artifacts/R_harvard.pt"
+device = torch.device("cpu")
+model_path = "./artifacts/R_harvard.pt"
 if os.path.exists(model_path):
     model.load_state_dict(torch.load(model_path))
 
@@ -50,11 +51,11 @@ if os.path.exists(model_path):
 
 # print(baseline_total/len(dataset))
 
-n_epochs =100
-
+n_epochs =150
+model = model.to(device)
 model.train()
 # best_mse_loss = baseline_total/len(dataset)
-best_mse_loss = 0.002
+best_mse_loss = 0.005
 for epoch in range(n_epochs):
     total_loss = 0
     total_mse_loss = 0
@@ -63,17 +64,18 @@ for epoch in range(n_epochs):
         optimizer.zero_grad()
         # c, x_k, lr_hsi, hr_msi, hr_hsi, to_torch_sparse(lz.tocoo()), yiq_downsampled, Zd, idx
         y, z, x  = items
-        y = y.reshape(1, *y.shape)
+        y  = y.to(device)
+        # y = y.reshape(1, *y.shape)
         z_ipt = z.numpy()
         # pdb.set_trace()
         Zd = torch.zeros(z.shape[0], y.shape[1], y.shape[2])
         C, N1, N2 = Zd.shape
         for c in range(Zd.shape[0]):
             Zd[c, :, :] = torch.FloatTensor(cv2.resize(z_ipt[c, :, :], (N1, N2), interpolation=cv2.INTER_CUBIC))
-        Zd = Zd.permute(1, 2, 0).reshape(-1, C)[None, ...]
+        Zd = Zd.permute(1, 2, 0).reshape(-1, C)[None, ...].to(device)
 
         # Zd 
-        pdb.set_trace()
+        # pdb.set_trace()
         y_pred = model(Zd)
         # y_pred = (newR @ Zd.reshape(C, -1)).reshape(*y.shape)
         y_pred = y_pred.transpose(1, 2).reshape(1, y.shape[0], N1, N2)
@@ -91,20 +93,22 @@ for epoch in range(n_epochs):
     if total_mse_loss/len(dataset) < best_mse_loss:
         best_mse_loss =  total_mse_loss/len(dataset)
         print("saving ...")
-        torch.save(model.state_dict(), "../artifacts/R_harvard.pt")
+        torch.save(model.state_dict(), "./artifacts/R_harvard.pt")
 
-torch.save(model.state_dict(), "../artifacts/R_harvard.pt")
+torch.save(model.state_dict(), "./artifacts/R_harvard.pt")
 
 
 model.eval()
 newR = model.weight
-test_dataset = HarvardDataset("../datasets/data/Harvard", mode="test")
+test_dataset = HarvardDataset("./datasets/data/Harvard", mode="test")
 
 total_psnr, total_ssim, total_rmse, total_sam, total_ergas =0,0,0,0,0
 with torch.no_grad():
-    for items in test_dataset:
+    for items in tqdm(test_dataset):
         y, z, x  = items
-        zc, N1, N2 = z.shape 
+        zc, N1, N2 = z.shape
+        y  = y.to(device)
+        z = z.to(device) 
         x2 = (newR @ z.reshape(zc, -1)).reshape(y.shape[0], N1, N2)
     
         # x = x.squeeze()
