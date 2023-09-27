@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jul 11 09:43:37 2022
-
-@author: adominick
 """
 
 # Note you will have to correct the path save location of the starting data in the generation function before running the code
