@@ -34,7 +34,6 @@ def prepare_point_ds(dataset):
     Yt, ps = pack(Yt, "* c")
     ds = mogptk.DataSet()
     for c in range(Yt.shape[1]):
-        print(Xt.shape, Yt[:, c].shape)
         d = Data(Xt, Yt[:, c])
         ds.append(d)
     
