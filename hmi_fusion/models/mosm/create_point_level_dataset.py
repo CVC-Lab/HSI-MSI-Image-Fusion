@@ -5,22 +5,22 @@ import mogptk
 data_path = "./datasets/data/CAVE"
 
 
-# def prepare_point_ds(dataset):
-#     Xt = []
-#     Yt = []
-#     for items in dataset:
-#         y, z, x_gt, _  = items
-#         xt = rearrange(z, 'c h w -> (h w) c')
-#         yt = rearrange(x_gt, 'c h w -> (h w) c')
-#         Xt.append(xt)
-#         Yt.append(yt)
-
-#     Xt, ps = pack(Xt, "* c") 
-#     Yt, ps = pack(Yt, "* c")
-#     return Xt, Yt
-
-
 def prepare_point_ds(dataset):
+    Xt = []
+    Yt = []
+    for items in dataset:
+        y, z, x_gt, _  = items
+        xt = rearrange(z, 'c h w -> (h w) c')
+        yt = rearrange(x_gt, 'c h w -> (h w) c')
+        Xt.append(xt)
+        Yt.append(yt)
+
+    Xt, ps = pack(Xt, "* c") 
+    Yt, ps = pack(Yt, "* c")
+    return Xt, Yt
+
+
+def prepare_point_ds_mogptk(dataset):
     Xt = []
     Yt = []
     for items in dataset:

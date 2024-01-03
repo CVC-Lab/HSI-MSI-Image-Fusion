@@ -14,6 +14,20 @@ Hyperspectral-Multispectral Image Fusion
 └── notebooks (contains experiments and visualization scripts, useful for tutorial and debugging)
 ```
 
+### Downloading datasets
+Follow instructions to setup huggingface-cli as per this wiki
+Navigate to ``hmi_fusion/data/CAVE/` and run the following for downloading CAVE -
+```python
+from huggingface_hub import login
+from huggingface_hub import hf_hub_download
+import os
+login(token="<your_token>")
+
+os.environ["HF_DATASETS_CACHE"] = "hmi_fusion/data"
+hf_hub_download(repo_id="cvc-lab/CAVE", filename="complete_ms_data.zip", repo_type="dataset")
+
+```
+
 #### Replicating our results
 Make sure you have recursively cloned all submodules of this repository. 
 1. Download cave_dataset
