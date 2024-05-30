@@ -1,6 +1,0 @@
-num_tasks: 31
-num_latents: 8
-smoke: 0
-data_path: "./datasets/data/CAVE"
-num_epochs: 50
-save_path: "artifacts/gp_mosm_best.pt"
