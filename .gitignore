@@ -2,3 +2,5 @@ HSI-MSI_Fusion2/artifacts/*
 */*/*/__pycache__/*
 */*/__pycache__
 HSI-MSI_Fusion2/datasets/data/*
+hmi_fusion/models/hip/generate_video/*
+hmi_fusion/models/hip/*/__pycache__/*
