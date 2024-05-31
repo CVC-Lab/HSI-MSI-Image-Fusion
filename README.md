@@ -27,7 +27,7 @@ Available datasets for this repository -
 
 Example script to download a particular file for CAVE dataset - 
 
-Navigate to ``hmi_fusion/data/CAVE/` and run the following for downloading CAVE -
+Navigate to `hmi_fusion/data/CAVE/` and run the following for downloading CAVE -
 ```python
 from huggingface_hub import login
 from huggingface_hub import hf_hub_download
