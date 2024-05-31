@@ -15,7 +15,18 @@ Hyperspectral-Multispectral Image Fusion
 ```
 
 ### Downloading datasets
-Follow instructions to setup huggingface-cli as per this wiki
+Follow instructions to setup huggingface-cli as per this wiki. Go to `https://huggingface.co/cvc-lab` to checkout datasets and files in each dataset.
+Available datasets for this repository -
+1. Pavia - `cvc-lab/PaviaUniversity`
+2. Chikusei - `cvc-lab/chikusei`
+3. Urban - `cvc-lab/urban`
+4. DC Mall - `cvc-lab/dc_mall`
+5. Jasper Ridge - `cvc-lab/jasper_ridge`
+6. CAVE - `cvc-lab/cave`
+7. Harvard - ``cvc-lab/harvard`
+
+Example script to download a particular file for CAVE dataset - 
+
 Navigate to ``hmi_fusion/data/CAVE/` and run the following for downloading CAVE -
 ```python
 from huggingface_hub import login
@@ -28,6 +39,11 @@ hf_hub_download(repo_id="cvc-lab/CAVE", filename="complete_ms_data.zip", repo_ty
 
 ```
 
+
+
+
+
+
 #### Replicating our results
 Make sure you have recursively cloned all submodules of this repository. 
 1. Download cave_dataset
@@ -39,3 +55,8 @@ Make sure you have recursively cloned all submodules of this repository.
 ## Replicating benchmarks
 
 TBD
+
+
+## Data sources -
+1. https://rslab.ut.ac.ir/data
+2. https://naotoyokoya.com/Download.html
