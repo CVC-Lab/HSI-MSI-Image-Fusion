@@ -20,14 +20,16 @@ from datasets.cave_dataset import CAVEDataset, R
 from .mosm_models import MultitaskDeepGP
 from .create_point_level_dataset import prepare_point_ds
 from einops import pack, unpack
+from torchmetrics import SpectralAngleMapper
+from torchmetrics import ErrorRelativeGlobalDimensionlessSynthesis as ERGAS
 from itertools import islice
 import pdb
 
+sam = SpectralAngleMapper()
+ergas = ERGAS(ratio=1/8)
 # Load parameters from config.yaml
 with open('models/mosm/dssp_config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-
-
 
 # Access parameters
 gpu_idx = config['gpu_idx']
@@ -42,11 +44,8 @@ batch_size = config['batch_size']
 num_batches_to_train = config['num_batches_to_train']
 initial_lr = 0.1
 milestones = [i*num_epochs//3 for i in range(3)]
-
 torch.cuda.set_device(gpu_idx)
-
 print(f"training on cuda: {gpu_idx}")
-# data_path = "./datasets/data/CAVE"
 dataset = CAVEDataset(data_path, None, mode="train")
 test_dataset = CAVEDataset(data_path, None, mode="test")
 train_x, train_y = prepare_point_ds(dataset=dataset)
@@ -100,12 +99,6 @@ model = MultitaskDeepGP(train_x.shape,
 model = model.cuda()
 model.train()
 
-# variational_ngd_optimizer = gpytorch.optim.NGD(model.variational_parameters(), num_data=num_data, lr=0.01)
-# hyperparameter_optimizer = torch.optim.Adam([
-#     {'params': model.hyperparameters()},
-    
-# ], lr=0.1)
-# optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
 optimizer = torch.optim.Adam([{'params': model.parameters()}], lr=initial_lr, betas=(0.9, 0.999))
 sched = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=milestones, gamma=0.1)
 mll = DeepApproximateMLL(VariationalELBO(model.likelihood, model, num_data=num_data))
@@ -126,6 +119,9 @@ for i in epochs_iter:
         # hyperparameter_optimizer.zero_grad()
         optimizer.zero_grad()
         output = model(tx.cuda())
+        pdb.set_trace()
+        # sam_loss = ergas(y_pred, y[None, ...])**2
+        # mse_loss = mse(y_pred, y[None, ...])
         loss = -mll(output, ty.cuda())
         train_loss += loss.item()
         epochs_iter.set_postfix(loss=loss.item())
@@ -175,7 +171,7 @@ for task, ax in enumerate(axs):
     ax.set_title(f'Task {task + 1}')
 
 # Specify the file location and format (e.g., PNG, PDF, SVG, etc.)
-file_location = 'artifacts/dssp_opt_3.png'
+file_location = 'artifacts/dssp_opt_4.png'
 
 # Save the figure to the specified file location
 plt.savefig(file_location)
