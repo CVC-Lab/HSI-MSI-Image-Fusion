@@ -23,7 +23,7 @@ Available datasets for this repository -
 4. DC Mall - `cvc-lab/dc_mall`
 5. Jasper Ridge - `cvc-lab/jasper_ridge`
 6. CAVE - `cvc-lab/cave`
-7. Harvard - ``cvc-lab/harvard`
+7. Harvard - `cvc-lab/harvard`
 
 Example script to download a particular file for CAVE dataset - 
 
