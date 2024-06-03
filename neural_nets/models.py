@@ -16,14 +16,14 @@ class Down1x3x1(nn.Module):
         self.bn3 = nn.BatchNorm2d(out_channels)
         self.gap = nn.AdaptiveAvgPool2d((1, 1))  # GAP layer
         
-        
     def forward(self, x):
         x1 = self.bn1(F.relu(self.l1(x)))
         x2 = self.bn2(F.relu(self.l2(x1)))
         x3 = self.bn3(F.relu(self.l3(x2)))
         z = self.gap(x3)
         return z, [x1, x2, x3]
-    
+
+
 class UpConcat(nn.Module):
     def __init__(self, in_channels) -> None:
         super().__init__()
@@ -67,10 +67,11 @@ class Up1x3x1(nn.Module):
         self.bn1 = nn.BatchNorm2d(out_channels)
 
     def forward(self, z, skip_connection):
-        
+        print(z.shape)
         z = self.bup3(F.relu(self.up3(z)))
         z = self.bup2(F.relu(self.up2(z)))
         x = self.bup1(F.relu(self.up1(z)))
+        print(x.shape)
         
         x = torch.cat((x, skip_connection[2]), dim=1)
         x = self.bn3(F.relu(self.deconv3(x)))
@@ -78,6 +79,7 @@ class Up1x3x1(nn.Module):
         x = self.bn2(F.relu(self.deconv2(x)))
         x = torch.cat((x, skip_connection[0]), dim=1)
         x = self.bn1(F.relu(self.deconv1(x)))
+
         return x
 
 
@@ -92,6 +94,7 @@ class SiameseEncoder(nn.Module):
     def forward(self, hsi, msi):
         z_hsi, hsi_out = self.hsi_enc(hsi)
         z_msi, msi_out = self.msi_enc(msi)
+        print(z_hsi.shape, z_msi.shape, hsi_out[0].shape, msi_out[0].shape)
         return z_hsi, z_msi, hsi_out, msi_out
 
 
@@ -121,6 +124,7 @@ class SiameseUNet(nn.Module):
         z_hsi, z_msi, hsi_out, msi_out = self.encoder(hsi, msi)
         z = torch.cat([z_hsi, z_msi], dim=1)
         segmentation_map = self.decoder(z, hsi_out, msi_out)
+        segmentation_map = segmentation_map.softmax(dim=1)
         return segmentation_map
 
 
@@ -131,4 +135,3 @@ if __name__ == '__main__':
     model = SiameseUNet(31, 3, 256, 5)  # Assume output channels for segmentation map is 5
     output = model(hsi, msi)
     print(output.shape)  # Should be [2, 5, 256, 256]
-
