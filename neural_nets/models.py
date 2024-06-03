@@ -14,49 +14,39 @@ class Down1x3x1(nn.Module):
         self.bn2 = nn.BatchNorm2d(128)
         self.l3 = nn.Conv2d(128, out_channels, kernel_size=1, stride=2)
         self.bn3 = nn.BatchNorm2d(out_channels)
-        self.gap = nn.AdaptiveAvgPool2d((1, 1))  # GAP layer
+        # self.gap = nn.AdaptiveAvgPool2d((1, 1))  # GAP layer
+        
         
     def forward(self, x):
         x1 = self.bn1(F.relu(self.l1(x)))
         x2 = self.bn2(F.relu(self.l2(x1)))
         x3 = self.bn3(F.relu(self.l3(x2)))
-        z = self.gap(x3)
-        return z, [x1, x2, x3]
-
-
+        # z = self.gap(x3)
+        return x3, [x1, x2]
+    
 class UpConcat(nn.Module):
     def __init__(self, in_channels) -> None:
         super().__init__()
-        # upsample by factor 4
-        self.deconv = nn.ConvTranspose2d(in_channels, in_channels, 
-                                         kernel_size=4, stride=4, 
-                                         padding=0, output_padding=0)
+        self.conv = nn.Conv2d(in_channels*2, in_channels, kernel_size=3, padding=1)
         self.bn = nn.BatchNorm2d(in_channels)
         
-    def forward(self, x, y):
-        x_up = self.deconv(x)
-        return self.bn(F.relu(x_up+y))
+    def forward(self, msi_feat, hsi_feat):
+        # upsample msi features
+        sx, sy = hsi_feat.shape[-2] // msi_feat.shape[-2], hsi_feat.shape[-1] // msi_feat.shape[-1]
+        msi_feat = F.upsample_bilinear(msi_feat, scale_factor=(sx, sy))
+        out = torch.cat([hsi_feat, msi_feat], dim=1)
+        return self.bn(F.relu(self.conv(out)))
         
         
 class Up1x3x1(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         # upsample latent to match spatial extent
-        self.up3 = nn.ConvTranspose2d(in_channels*2, in_channels, 
-                                         kernel_size=4, stride=4, 
-                                         padding=0, output_padding=0)
-        self.bup3 = nn.BatchNorm2d(in_channels)
-        self.up2 = nn.ConvTranspose2d(in_channels, in_channels, 
-                                         kernel_size=4, stride=4, 
-                                         padding=0, output_padding=0)
-        self.bup2 = nn.BatchNorm2d(in_channels)
-        self.up1 = nn.ConvTranspose2d(in_channels, in_channels, 
-                                         kernel_size=2, stride=2, 
-                                         padding=0, output_padding=0)
-        self.bup1 = nn.BatchNorm2d(in_channels)
+        self.conv = nn.Conv2d(in_channels*2, in_channels, kernel_size=3, padding=1)
+        self.bn = nn.BatchNorm2d(in_channels)
         
         # up 1x3x1
-        self.deconv3 = nn.ConvTranspose2d(in_channels*2, 128, 
+        self.deconv3 = nn.ConvTranspose2d(in_channels, 128, 
                                           kernel_size=1, stride=2, output_padding=1)
         self.bn3 = nn.BatchNorm2d(128)
         self.deconv2 = nn.ConvTranspose2d(128*2, 64, kernel_size=3, 
@@ -67,19 +57,14 @@ class Up1x3x1(nn.Module):
         self.bn1 = nn.BatchNorm2d(out_channels)
 
     def forward(self, z, skip_connection):
-        print(z.shape)
-        z = self.bup3(F.relu(self.up3(z)))
-        z = self.bup2(F.relu(self.up2(z)))
-        x = self.bup1(F.relu(self.up1(z)))
-        print(x.shape)
         
-        x = torch.cat((x, skip_connection[2]), dim=1)
+        
+        x = self.bn(F.relu(self.conv(z)))
         x = self.bn3(F.relu(self.deconv3(x)))
         x = torch.cat((x, skip_connection[1]), dim=1) 
         x = self.bn2(F.relu(self.deconv2(x)))
         x = torch.cat((x, skip_connection[0]), dim=1)
         x = self.bn1(F.relu(self.deconv1(x)))
-
         return x
 
 
@@ -93,8 +78,10 @@ class SiameseEncoder(nn.Module):
         
     def forward(self, hsi, msi):
         z_hsi, hsi_out = self.hsi_enc(hsi)
-        z_msi, msi_out = self.msi_enc(msi)
-        print(z_hsi.shape, z_msi.shape, hsi_out[0].shape, msi_out[0].shape)
+        z_msi, msi_out = self.msi_enc(msi) # apply bilinear upsample here
+        # get scale of upsampling
+        sx, sy = z_hsi.shape[-2] // z_msi.shape[-2], z_hsi.shape[-1] // z_msi.shape[-1]
+        z_msi = F.upsample_bilinear(z_msi, scale_factor=(sx, sy))
         return z_hsi, z_msi, hsi_out, msi_out
 
 
@@ -108,10 +95,9 @@ class SegmentationDecoder(nn.Module):
 
     def forward(self, z, hsi_out, msi_out):
         # merge outputs of hsi and msi encoder
-        out3 = self.upcat3(msi_out[2], hsi_out[2])
         out2 = self.upcat2(msi_out[1], hsi_out[1])
         out1 = self.upcat1(msi_out[0], hsi_out[0])
-        x = self.decoder(z, [out1, out2, out3])
+        x = self.decoder(z, [out1, out2])
         return x
 
 class SiameseUNet(nn.Module):
@@ -124,14 +110,15 @@ class SiameseUNet(nn.Module):
         z_hsi, z_msi, hsi_out, msi_out = self.encoder(hsi, msi)
         z = torch.cat([z_hsi, z_msi], dim=1)
         segmentation_map = self.decoder(z, hsi_out, msi_out)
-        segmentation_map = segmentation_map.softmax(dim=1)
         return segmentation_map
 
 
 if __name__ == '__main__':
     # usage
-    hsi = torch.rand(2, 31, 256, 256)
-    msi = torch.rand(2, 3, 64, 64)
     model = SiameseUNet(31, 3, 256, 5)  # Assume output channels for segmentation map is 5
-    output = model(hsi, msi)
-    print(output.shape)  # Should be [2, 5, 256, 256]
+    for i in range(1, 5):
+        hsi = torch.rand(2, 31, 256*i, 256*i)
+        msi = torch.rand(2, 3, 64*i, 64*i)
+        output = model(hsi, msi)
+        print(output.shape)  
+
