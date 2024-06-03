@@ -31,10 +31,12 @@ def input_processing(img_path, gt_path, start_band, end_band):
 
 
 class SingleImageDataset(Dataset):
-    def __init__(self, single_img_path, single_gt_path,
+    def __init__(self, channels,
+                 single_img_path, single_gt_path,
                  start_band, end_band, 
                  rgb_width, rgb_height,
                  hsi_width, hsi_height):
+        self.channels = channels
         processed_input = input_processing(single_img_path, single_gt_path,
                                            start_band, end_band)
         self.img_sri, self.img_rgb = processed_input[0], processed_input[1]
@@ -64,5 +66,13 @@ class SingleImageDataset(Dataset):
         
         # Down sample to get desired HSI instance.
         sub_hsi = cv2.pyrDown(sub_sri, dstsize=(self.hsi_width, self.hsi_height))
+
+        # Original shapes: (H, W, CH) and (H, W, 3), (H, W, N).
+        sub_hsi = sub_hsi[:, :, self.channels]
+
+        # After conversion shapes: (CH, H, W), (3, H, W), (N, H, W).
+        sub_hsi = np.moveaxis(sub_hsi, 2, 0)
+        sub_rgb = np.moveaxis(sub_rgb, 2, 0)
+        sub_gt = np.moveaxis(sub_gt, 2, 0)
         
         return sub_hsi, sub_rgb, sub_gt
