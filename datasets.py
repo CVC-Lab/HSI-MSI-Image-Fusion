@@ -31,6 +31,7 @@ def input_processing(img_path, gt_path, start_band, end_band):
 
 
 class SingleImageDataset(Dataset):
+    ''' Simple dataset from subimage of a single HSI image'''
     def __init__(self, channels,
                  single_img_path, single_gt_path,
                  start_band, end_band, 
