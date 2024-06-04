@@ -3,7 +3,8 @@ import scipy.io as sio
 import cv2
 import spectral as spy
 from torch.utils.data import Dataset
-
+from sklearn.model_selection import train_test_split
+import pdb
 
 RGB = np.array([630.0, 532.0, 465.0])
 
@@ -14,7 +15,6 @@ def input_processing(img_path, gt_path, start_band, end_band):
     tmp = sio.loadmat(gt_path)
     gt = tmp['data']
     width, height = gt.shape[0], gt.shape[1]
-
     # Get full SRI
     tmp = sio.loadmat(img_path)
     max_value = tmp['maxValue'][0][0]
@@ -36,7 +36,8 @@ class SingleImageDataset(Dataset):
                  single_img_path, single_gt_path,
                  start_band, end_band, 
                  rgb_width, rgb_height,
-                 hsi_width, hsi_height):
+                 hsi_width, hsi_height, 
+                 mode="train", split_ratio=0.8, seed=42):
         self.channels = channels
         processed_input = input_processing(single_img_path, single_gt_path,
                                            start_band, end_band)
@@ -49,11 +50,24 @@ class SingleImageDataset(Dataset):
         # Max indices along width/height dimension for subimage extraction.
         self.max_width_index = self.width - self.rgb_width + 1
         self.max_height_index = self.height - self.rgb_height + 1
+        
+        indices = list(range(self.max_width_index * self.max_height_index))
+        train_indices, test_indices = train_test_split(
+            indices, test_size=(1 - split_ratio), random_state=seed
+        )
+        self.mode = mode
+        if self.mode == 'train':
+            self.indices = train_indices
+        else:
+            self.indices = test_indices
 
     def __len__(self):
-        return self.max_width_index * self.max_height_index
+        return len(self.indices)
     
     def __getitem__(self, idx):
+        # idx is in range [0, len(indices)] but 
+        # self.indices stores actual indices of bigger ds
+        idx = self.indices[idx] 
         width_index = idx // self.max_height_index
         height_index = idx % self.max_height_index
 
@@ -75,5 +89,4 @@ class SingleImageDataset(Dataset):
         sub_hsi = np.moveaxis(sub_hsi, 2, 0)
         sub_rgb = np.moveaxis(sub_rgb, 2, 0)
         sub_gt = np.moveaxis(sub_gt, 2, 0)
-        
         return sub_hsi, sub_rgb, sub_gt

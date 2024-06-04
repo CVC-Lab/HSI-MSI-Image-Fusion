@@ -30,7 +30,7 @@ class UpConcat(nn.Module):
     def forward(self, msi_feat, hsi_feat):
         # upsample msi features
         sx, sy = msi_feat.shape[-2] // hsi_feat.shape[-2], msi_feat.shape[-1] // hsi_feat.shape[-1]
-        hsi_feat = F.upsample_bilinear(hsi_feat, scale_factor=(sx, sy))
+        hsi_feat = F.interpolate(hsi_feat, scale_factor=(sx, sy))
         out = torch.cat([hsi_feat, msi_feat], dim=1)
         return self.bn(F.relu(self.conv(out)))
         
@@ -76,7 +76,7 @@ class SiameseEncoder(nn.Module):
         
         # get scale of upsampling
         sx, sy = z_msi.shape[-2] // z_hsi.shape[-2], z_msi.shape[-1] // z_hsi.shape[-1]
-        z_hsi = F.upsample_bilinear(z_hsi, scale_factor=(sx, sy))
+        z_hsi = F.interpolate(z_hsi, scale_factor=(sx, sy))
         return z_hsi, z_msi, hsi_out, msi_out
 
 
