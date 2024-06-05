@@ -27,6 +27,11 @@ os.environ["HF_DATASETS_CACHE"] = "hmi_fusion/data"
 hf_hub_download(repo_id="cvc-lab/CAVE", filename="complete_ms_data.zip", repo_type="dataset")
 
 ```
+### Download pre-trained SAM model
+Navigate to models/ and run
+```sh
+wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+```
 
 #### Replicating our results
 Make sure you have recursively cloned all submodules of this repository. 

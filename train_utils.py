@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 from losses import CombinedLoss
+from tqdm import tqdm
 
 np.random.seed(0)
 torch.manual_seed(0)
@@ -19,7 +20,7 @@ def main_training_loop(trainloader, net,
     for epoch in range(num_epochs):  # loop over the dataset multiple times
         print(f'Epoch: {epoch+1}', end=' ')
         running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
+        for i, data in tqdm(enumerate(trainloader, 0)):
             hsi_batch, rgb_batch, labels_batch = data
             # zero the parameter gradients
             optimizer.zero_grad()

@@ -4,3 +4,6 @@ h5py
 pypeln
 cv2
 spectral
+onnx
+onnxruntime
+'git+https://github.com/facebookresearch/segment-anything.git'
