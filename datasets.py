@@ -5,6 +5,7 @@ import spectral as spy
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import pdb
+from einops import rearrange
 
 RGB = np.array([630.0, 532.0, 465.0])
 
@@ -37,7 +38,7 @@ class SingleImageDataset(Dataset):
                  start_band, end_band, 
                  rgb_width, rgb_height,
                  hsi_width, hsi_height, 
-                 mode="train", split_ratio=0.8, seed=42):
+                 mode="train", transforms=None, split_ratio=0.8, seed=42):
         self.channels = channels
         processed_input = input_processing(single_img_path, single_gt_path,
                                            start_band, end_band)
@@ -60,6 +61,7 @@ class SingleImageDataset(Dataset):
             self.indices = train_indices
         else:
             self.indices = test_indices
+        self.transforms = transforms
 
     def __len__(self):
         return len(self.indices)
@@ -84,9 +86,14 @@ class SingleImageDataset(Dataset):
 
         # Original shapes: (H, W, CH) and (H, W, 3), (H, W, N).
         sub_hsi = sub_hsi[:, :, self.channels]
-
+        if self.transforms:
+            sub_hsi, sub_rgb, sub_gt = self.transforms(sub_hsi, sub_rgb, sub_gt)
+            sub_gt = rearrange(sub_gt, "H W C -> C H W")
         # After conversion shapes: (CH, H, W), (3, H, W), (N, H, W).
-        sub_hsi = np.moveaxis(sub_hsi, 2, 0)
-        sub_rgb = np.moveaxis(sub_rgb, 2, 0)
-        sub_gt = np.moveaxis(sub_gt, 2, 0)
+        else:
+            sub_hsi = np.moveaxis(sub_hsi, 2, 0)
+            sub_rgb = np.moveaxis(sub_rgb, 2, 0)
+            sub_gt = np.moveaxis(sub_gt, 2, 0)
+        
+        
         return sub_hsi, sub_rgb, sub_gt

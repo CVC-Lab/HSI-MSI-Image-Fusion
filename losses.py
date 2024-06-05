@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=1, gamma=2):
+    def __init__(self, alpha=1, gamma=3):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -24,12 +24,13 @@ def dice_loss(pred, target, smooth=1e-6):
     
     
 class CombinedLoss(nn.Module):
-    def __init__(self, alpha=0.5):
+    def __init__(self, alpha=1.0, gamma=3.0):
         super(CombinedLoss, self).__init__()
         self.alpha = alpha
-        self.cross_entropy = nn.CrossEntropyLoss()
+        # self.cross_entropy = nn.CrossEntropyLoss()
+        self.loss = FocalLoss(gamma=gamma)
 
     def forward(self, inputs, targets):
-        ce_loss = self.cross_entropy(inputs, targets)
+        loss = self.loss(inputs, targets)
         dice = dice_loss(inputs, targets)
-        return self.alpha * ce_loss + (1 - self.alpha) * dice
+        return self.alpha * loss + (1 - self.alpha) * dice

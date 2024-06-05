@@ -4,6 +4,8 @@ import numpy as np
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 from losses import CombinedLoss
 
+np.random.seed(0)
+torch.manual_seed(0)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 loss_fn = CombinedLoss()
 
@@ -27,12 +29,13 @@ def main_training_loop(trainloader, net,
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-        ep_loss = loss/ds_len
-        if (i) % log_interval == 0:
-            print(f"epoch: {i} loss:{ep_loss}")
+        ep_loss = loss.item()/ds_len
+        if epoch % log_interval == 0:
+            print(f"loss:{ep_loss}")
         # save model if lowest loss
         if ep_loss < lowest_loss:
-            print('saving best model')
+            lowest_loss = ep_loss
+            print('saved')
             torch.save(net.state_dict(), save_path)
         scheduler.step(ep_loss)
     print('Done')
