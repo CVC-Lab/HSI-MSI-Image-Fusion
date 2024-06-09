@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from neural_nets.siamese_unet import SiameseUNet
 from neural_nets.sam_siamese_unet import SamSiameseUNet
+from neural_nets.ca_siamese_unet import CASiameseUNet
 from neural_nets.unet import UNet
 from datasets import SingleImageDataset
 from train_utils import main_training_loop, test
@@ -47,7 +48,7 @@ rgb_height = 64
 hsi_width = 32 
 hsi_height = 32
 channels=[20, 60, 80, 100, 120, 140]
-save_path = 'models/trained_sam_siamese_model.pth'
+save_path = 'models/trained_ca_siamese_model.pth'
 
 train_dataset = SingleImageDataset(channels,
                  img_path, gt_path,
@@ -63,7 +64,7 @@ test_dataset = SingleImageDataset(channels,
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=16, shuffle=True)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-net = SamSiameseUNet(6, 3, 256, 4).to(torch.double).to(DEVICE)
+net = CASiameseUNet(6, 3, 256, 4).to(torch.double).to(DEVICE)
 # net = UNet(3, 256, 4).to(torch.double).to(DEVICE)
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
