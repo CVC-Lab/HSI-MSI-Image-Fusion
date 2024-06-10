@@ -5,8 +5,7 @@ from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 from losses import CombinedLoss
 from tqdm import tqdm
 
-np.random.seed(0)
-torch.manual_seed(0)
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 loss_fn = CombinedLoss()
 

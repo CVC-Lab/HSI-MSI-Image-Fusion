@@ -20,7 +20,7 @@ class IWCA(nn.Module):
         
         # # mixing of channel information
         self.c2 = nn.Conv2d(in_channels, in_channels, 
-                                    kernel_size=3)
+                                    kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm2d(in_channels)
         self.c3 = nn.Conv2d(in_channels, in_channels, 
                                     kernel_size=1)
@@ -70,7 +70,35 @@ class UpConcat(nn.Module):
         out = torch.cat([hsi_feat, msi_feat], dim=1)
         return self.bn(F.relu(self.conv(out)))
         
+class Up(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        # upsample latent to match spatial extent
+        self.conv = nn.Conv2d(in_channels*2, in_channels, kernel_size=3, padding=1)
+        self.bn = nn.BatchNorm2d(in_channels)
+        self.deconv3 = nn.ConvTranspose2d(in_channels, 128, 
+                                          kernel_size=3, 
+                                          stride=2, padding=1, output_padding=1)
+        self.bn3 = nn.BatchNorm2d(128)
+        self.deconv2 = nn.ConvTranspose2d(128*2, 64, kernel_size=3, 
+                                          stride=2, padding=1, output_padding=1)
+        self.bn2 = nn.BatchNorm2d(64)
+        self.deconv1 = nn.ConvTranspose2d(64*2, out_channels, 
+                                          kernel_size=3, 
+                                          stride=2, padding=1, output_padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+
+    def forward(self, z, skip_connection):
         
+        x = self.bn(F.relu(self.conv(z)))
+        x = self.bn3(F.relu(self.deconv3(x)))
+        x = torch.cat((x, skip_connection[1]), dim=1) 
+        x = self.bn2(F.relu(self.deconv2(x)))
+        x = torch.cat((x, skip_connection[0]), dim=1)
+        x = self.bn1(F.relu(self.deconv1(x)))
+        return x
+    
+            
 class Up1x3x1(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -122,7 +150,7 @@ class SegmentationDecoder(nn.Module):
         super().__init__()
         self.upcat2 = UpConcat(latent_dim//2)# [B, 128, 64, 64]
         self.upcat1 = UpConcat(latent_dim//4)# [B, 64, 128, 128]
-        self.decoder = Up1x3x1(latent_dim, out_channels)
+        self.decoder = Up(latent_dim, out_channels)
 
     def forward(self, z, hsi_out, msi_out):
         # merge outputs of hsi and msi encoder
@@ -151,16 +179,17 @@ if __name__ == '__main__':
         hsi = torch.rand(2, 31, 64*i, 64*i)
         msi = torch.rand(2, 3, 256*i, 256*i)
         output = model(hsi, msi)
+        print(output.shape)
         # instead of output, we will use the loss to compute which channel 
         # inflences the training more than others
         # lower loss also means that those channels are better
         # full jacobian -> [2, 5, 256, 256, 2, 31, 1, 1] so take mean 
         # jacobian computation
-        output = model(hsi, msi)
-        jacobian = torch.autograd.functional.jacobian(lambda x: output.mean((2, 3)), 
-                                        model.encoder.channel_selector.importance_wts)
-        jacobian = jacobian.squeeze() # [2, 5, 2, 31]
-        jacobian = jacobian.mean((0, 2)) # [5, 31]
-        print(jacobian.shape)
+        # output = model(hsi, msi)
+        # jacobian = torch.autograd.functional.jacobian(lambda x: output.mean((2, 3)), 
+        #                                 model.encoder.channel_selector.importance_wts)
+        # jacobian = jacobian.squeeze() # [2, 5, 2, 31]
+        # jacobian = jacobian.mean((0, 2)) # [5, 31]
+        # print(jacobian.shape)
         
 

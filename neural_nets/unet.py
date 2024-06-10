@@ -1,24 +1,21 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from .unet_base_blocks import Conv1x3x1
 import torch
+import pdb
 
 
 class Down1x3x1(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.l1 = nn.Conv2d(in_channels, 64, kernel_size=1, stride=2)
-        self.relu = nn.ReLU()
-        self.bn1 = nn.BatchNorm2d(64)
-        self.l2 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1)
-        self.bn2 = nn.BatchNorm2d(128)
-        self.l3 = nn.Conv2d(128, out_channels, kernel_size=1, stride=2)
-        self.bn3 = nn.BatchNorm2d(out_channels)
-        
+        self.l1 = Conv1x3x1(in_channels, 64)
+        self.l2 = Conv1x3x1(64, 128)
+        self.l3 = Conv1x3x1(128, out_channels)
         
     def forward(self, x):
-        x1 = self.bn1(F.relu(self.l1(x)))
-        x2 = self.bn2(F.relu(self.l2(x1)))
-        x3 = self.bn3(F.relu(self.l3(x2)))
+        x1 = self.l1(x)
+        x2 = self.l2(x1)
+        x3 = self.l3(x2)
         return x3, [x1, x2]
     
 class UpConcat(nn.Module):
@@ -35,24 +32,26 @@ class UpConcat(nn.Module):
         return self.bn(F.relu(self.conv(out)))
         
         
-class Up1x3x1(nn.Module):
+class Up(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         # upsample latent to match spatial extent
         self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1)
         self.bn = nn.BatchNorm2d(in_channels)
-        # up 1x3x1
         self.deconv3 = nn.ConvTranspose2d(in_channels, 128, 
-                                          kernel_size=1, stride=2, output_padding=1)
+                                          kernel_size=3, 
+                                          stride=2, padding=1, output_padding=1)
         self.bn3 = nn.BatchNorm2d(128)
         self.deconv2 = nn.ConvTranspose2d(128*2, 64, kernel_size=3, 
                                           stride=2, padding=1, output_padding=1)
         self.bn2 = nn.BatchNorm2d(64)
         self.deconv1 = nn.ConvTranspose2d(64*2, out_channels, 
-                                          kernel_size=1, stride=2, output_padding=1)
+                                          kernel_size=3, 
+                                          stride=2, padding=1, output_padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
 
     def forward(self, z, skip_connection):
+        
         x = self.bn(F.relu(self.conv(z)))
         x = self.bn3(F.relu(self.deconv3(x)))
         x = torch.cat((x, skip_connection[1]), dim=1) 
@@ -76,7 +75,7 @@ class Encoder(nn.Module):
 class SegmentationDecoder(nn.Module):
     def __init__(self, latent_dim, out_channels):
         super().__init__()
-        self.decoder = Up1x3x1(latent_dim, out_channels)
+        self.decoder = Up(latent_dim, out_channels)
 
     def forward(self, z, msi_out):
         x = self.decoder(z, msi_out)
@@ -88,7 +87,7 @@ class UNet(nn.Module):
         self.encoder = Encoder(msi_in, latent_dim)
         self.decoder = SegmentationDecoder(latent_dim, output_channels)
         
-    def forward(self, hsi, msi):
+    def forward(self, hsi=None, msi=None):
         z_msi, msi_out = self.encoder(msi)
         segmentation_map = self.decoder(z_msi, msi_out)
         return segmentation_map
@@ -99,6 +98,6 @@ if __name__ == '__main__':
     model = UNet(3, 256, 5)  # Assume output channels for segmentation map is 5
     for i in range(1, 5):
         msi = torch.rand(2, 3, 256*i, 256*i)
-        output = model(msi)
+        output = model(msi=msi)
         print(output.shape)  
 

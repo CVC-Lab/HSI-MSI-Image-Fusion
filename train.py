@@ -48,7 +48,19 @@ rgb_height = 64
 hsi_width = 32 
 hsi_height = 32
 channels=[20, 60, 80, 100, 120, 140]
-save_path = 'models/trained_ca_siamese_model.pth'
+model_name = 'sam_siamese'
+
+model_factory = {
+    'ca_siamese': CASiameseUNet,
+    'unet': UNet,
+    'sam_siamese': SamSiameseUNet
+}
+model_args = {
+    'ca_siamese': (6, 3, 256, 4),
+    'unet': (3, 256, 4),
+    'sam_siamese': (6, 3, 256, 4)
+}
+save_path = f'models/trained_{model_name}_final.pth'
 
 train_dataset = SingleImageDataset(channels,
                  img_path, gt_path,
@@ -64,13 +76,12 @@ test_dataset = SingleImageDataset(channels,
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=16, shuffle=True)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-net = CASiameseUNet(6, 3, 256, 4).to(torch.double).to(DEVICE)
-# net = UNet(3, 256, 4).to(torch.double).to(DEVICE)
+net = model_factory[model_name](*model_args[model_name]).to(torch.double).to(DEVICE)
 optimizer = optim.Adam(net.parameters(), lr=0.001)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
                                                        mode='min', factor=0.5, patience=3)
 main_training_loop(train_loader, net, optimizer, scheduler, save_path=save_path,
-                 num_epochs=10, device=DEVICE, log_interval=2)
+                 num_epochs=40, device=DEVICE, log_interval=2)
 
 mIOU, gdice = test(test_loader, net, save_path=save_path, num_classes=4)
 print(f"mIOU: {mIOU}, gdice: {gdice}")
