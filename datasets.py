@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import pdb
 from einops import rearrange
+from time_series import get_most_informative_img_sri
 
 RGB = np.array([630.0, 532.0, 465.0])
 
@@ -44,6 +45,11 @@ class SingleImageDataset(Dataset):
                                            start_band, end_band)
         self.img_sri, self.img_rgb = processed_input[0], processed_input[1]
         self.gt = processed_input[2]
+        self.num_classes = self.gt.shape[-1]
+        if channels == None:
+            self.img_sri = get_most_informative_img_sri(self.img_sri, self.gt, self.num_classes)
+        else:
+            self.img_sri = self.img_sri[:, :, channels]
         self.width, self.height = self.gt.shape[0], self.gt.shape[1]
         self.rgb_width, self.rgb_height = rgb_width, rgb_height
         self.hsi_width, self.hsi_height = hsi_width, hsi_height
@@ -85,7 +91,7 @@ class SingleImageDataset(Dataset):
         sub_hsi = cv2.pyrDown(sub_sri, dstsize=(self.hsi_width, self.hsi_height))
 
         # Original shapes: (H, W, CH) and (H, W, 3), (H, W, N).
-        sub_hsi = sub_hsi[:, :, self.channels]
+        # sub_hsi = sub_hsi[:, :, self.channels]
         if self.transforms:
             sub_hsi, sub_rgb, sub_gt = self.transforms(sub_hsi, sub_rgb, sub_gt)
             sub_gt = rearrange(sub_gt, "H W C -> C H W")
@@ -94,6 +100,5 @@ class SingleImageDataset(Dataset):
             sub_hsi = np.moveaxis(sub_hsi, 2, 0)
             sub_rgb = np.moveaxis(sub_rgb, 2, 0)
             sub_gt = np.moveaxis(sub_gt, 2, 0)
-        
         
         return sub_hsi, sub_rgb, sub_gt
