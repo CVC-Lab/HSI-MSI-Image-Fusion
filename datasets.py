@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import pdb
 from einops import rearrange
-from time_series import get_most_informative_img_sri
+# from time_series import get_most_informative_img_sri
 
 RGB = np.array([630.0, 532.0, 465.0])
 
@@ -47,7 +47,8 @@ class SingleImageDataset(Dataset):
         self.gt = processed_input[2]
         self.num_classes = self.gt.shape[-1]
         if channels == None:
-            self.img_sri = get_most_informative_img_sri(self.img_sri, self.gt, self.num_classes)
+            pass
+            # self.img_sri = get_most_informative_img_sri(self.img_sri, self.gt, self.num_classes)
         else:
             self.img_sri = self.img_sri[:, :, channels]
         self.width, self.height = self.gt.shape[0], self.gt.shape[1]

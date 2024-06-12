@@ -7,6 +7,7 @@ import torch.optim as optim
 from neural_nets.siamese_unet import SiameseUNet
 from neural_nets.sam_siamese_unet import SamSiameseUNet
 from neural_nets.ca_siamese_unet import CASiameseUNet
+from neural_nets.basic_model import CNN
 from neural_nets.unet import UNet
 from datasets import SingleImageDataset
 from train_utils import main_training_loop, test
@@ -48,17 +49,20 @@ rgb_height = 64
 hsi_width = 32 
 hsi_height = 32
 channels=[20, 60, 80, 100, 120, 140]
-model_name = 'sam_siamese'
+model_name = 'cnn'
 
 model_factory = {
     'ca_siamese': CASiameseUNet,
     'unet': UNet,
-    'sam_siamese': SamSiameseUNet
+    'sam_siamese': SamSiameseUNet,
+    'cnn': CNN
+    
 }
 model_args = {
     'ca_siamese': (6, 3, 256, 4),
     'unet': (3, 256, 4),
-    'sam_siamese': (6, 3, 256, 4)
+    'sam_siamese': (6, 3, 256, 4),
+    'cnn': (3, 4)
 }
 save_path = f'models/trained_{model_name}_final.pth'
 
