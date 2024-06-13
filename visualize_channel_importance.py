@@ -82,7 +82,7 @@ if __name__ == '__main__':
     hsi_width = 32 
     hsi_height = 32
     channels=[20, 60, 80, 100, 120, 140]
-    save_path = 'models/trained_ca_siamese_model.pth'
+    save_path = 'models/trained_ca_siamese_model_final.pth'
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = CASiameseUNet(6, 3, 256, 4)
     model.load_state_dict(torch.load(save_path))

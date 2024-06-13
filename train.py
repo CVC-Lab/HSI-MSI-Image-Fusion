@@ -11,15 +11,16 @@ from neural_nets.basic_model import CNN
 from neural_nets.unet import UNet
 from datasets import SingleImageDataset
 from train_utils import main_training_loop, test
-from transforms import apply_transforms
+from transforms import apply_transforms, apply_augmentation
 
-
+torch.cuda.set_device(1)
 # Set random seeds
 random.seed(42)
 np.random.seed(42)
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.cuda.manual_seed_all(42)
+
 # # Ensure deterministic behavior in PyTorch
 # torch.backends.cudnn.deterministic = True
 # torch.backends.cudnn.benchmark = False
@@ -49,7 +50,7 @@ rgb_height = 64
 hsi_width = 32 
 hsi_height = 32
 channels=[20, 60, 80, 100, 120, 140]
-model_name = 'cnn'
+model_name = 'ca_siamese'
 
 model_factory = {
     'ca_siamese': CASiameseUNet,
@@ -64,19 +65,19 @@ model_args = {
     'sam_siamese': (6, 3, 256, 4),
     'cnn': (3, 4)
 }
-save_path = f'models/trained_{model_name}_final.pth'
+save_path = f'models/trained_{model_name}_final_noisy.pth'
 
 train_dataset = SingleImageDataset(channels,
                  img_path, gt_path,
                  start_band, end_band, 
                  rgb_width, rgb_height,
                  hsi_width, hsi_height, mode="train", 
-                 transforms=None)
+                 transforms=apply_augmentation)
 test_dataset = SingleImageDataset(channels,
                  img_path, gt_path,
                  start_band, end_band, 
                  rgb_width, rgb_height,
-                 hsi_width, hsi_height, mode="test")
+                 hsi_width, hsi_height, mode="test", transforms=apply_augmentation)
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=16, shuffle=True)
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

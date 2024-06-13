@@ -95,7 +95,7 @@ class SingleImageDataset(Dataset):
         # sub_hsi = sub_hsi[:, :, self.channels]
         if self.transforms:
             sub_hsi, sub_rgb, sub_gt = self.transforms(sub_hsi, sub_rgb, sub_gt)
-            sub_gt = rearrange(sub_gt, "H W C -> C H W")
+            # sub_gt = rearrange(sub_gt, "H W C -> C H W")
         # After conversion shapes: (CH, H, W), (3, H, W), (N, H, W).
         else:
             sub_hsi = np.moveaxis(sub_hsi, 2, 0)
