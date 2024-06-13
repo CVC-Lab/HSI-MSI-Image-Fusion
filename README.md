@@ -33,6 +33,13 @@ Navigate to models/ and run
 wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 ```
 
+## Run experiments
+
+```sh
+python train.py --config configs/jasper_ridge_experiment.yaml
+```
+
+
 #### Replicating our results
 Make sure you have recursively cloned all submodules of this repository. 
 1. Download cave_dataset
