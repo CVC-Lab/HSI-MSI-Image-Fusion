@@ -5,7 +5,11 @@ device: 1
 
 model:
  name: 'ca_siamese'
- args: [6, 3, 256, 4]
+ args:
+  hsi_in: 6  
+  msi_in: 3
+  latent_dim: 256
+  output_channels: 4
 
 dataset:
   type: jasper_ridge
@@ -14,9 +18,9 @@ dataset:
     single_gt_path: 'data/jasper/jasper_ridge_gt.mat'
     start_band: 380
     end_band: 2500
-    rgb_width: 64 
-    rgb_height: 64
-    hsi_width: 32 
-    hsi_height: 32
+    rgb_width: 16
+    rgb_height: 16
+    hsi_width: 8 
+    hsi_height: 8
     channels: [20, 60, 80, 100, 120, 140]
   batch_size: 16

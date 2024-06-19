@@ -35,7 +35,7 @@ is_check_shapes=False)
 
 
 class AddSingleScattering(iaa.meta.Augmenter):
-    def __init__(self, beta=0.04, A=0.8, depth_method='linear', name=None, deterministic=False, random_state=None):
+    def __init__(self, beta=0.1, A=0.8, depth_method='linear', name=None, deterministic=False, random_state=None):
         super(AddSingleScattering, self).__init__(name=name, deterministic=deterministic, random_state=random_state)
         self.beta = beta
         self.A = A
@@ -72,10 +72,10 @@ class AddSingleScattering(iaa.meta.Augmenter):
 
 # Example usage in an imgaug pipeline
 augmentation_pipeline = iaa.Sequential([
-    iaa.Fliplr(0.5),
-    iaa.GammaContrast(1.5, per_channel=True),
+    # iaa.MotionBlur(k=15, angle=[-45, 45]),
+    # iaa.GammaContrast(1.5, per_channel=True),
     AddSingleScattering(beta=0.1, A=0.8, depth_method='random')
-], deterministic=True)
+])
 
 # Example application
 def apply_augmentation(hsi, msi, gt):

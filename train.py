@@ -10,7 +10,7 @@ from neural_nets import model_factory, model_args
 from datasets import dataset_factory
 from train_utils import main_training_loop, test
 from transforms import apply_transforms, apply_augmentation
-
+import pdb
 
 # Set random seeds
 random.seed(42)
@@ -46,7 +46,7 @@ def main():
                              batch_size=config['dataset']['batch_size'], 
                              shuffle=True)
     DEVICE = torch.device(f"cuda:{config['device']}" if torch.cuda.is_available() else "cpu")
-    net = model_factory[model_name](*config['model']['args']).to(torch.double).to(DEVICE)
+    net = model_factory[model_name](**config['model']['args']).to(torch.double).to(DEVICE)
     optimizer = optim.Adam(net.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
                                                         mode='min', factor=0.5, patience=3)
