@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from .unet_base_blocks import Conv1x3x1
+from .utils import pad_to_power_of_2
 import torch
 import pdb
 
@@ -30,8 +31,8 @@ class UpConcat(nn.Module):
         hsi_feat = F.interpolate(hsi_feat, scale_factor=(sx, sy))
         out = torch.cat([hsi_feat, msi_feat], dim=1)
         return self.bn(F.relu(self.conv(out)))
-        
-        
+
+
 class Up(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -88,9 +89,11 @@ class UNet(nn.Module):
         self.decoder = SegmentationDecoder(latent_dim, output_channels)
         
     def forward(self, hsi=None, msi=None):
+        orig_ht, orig_width = msi.shape[2:]
+        msi = pad_to_power_of_2(msi)
         z_msi, msi_out = self.encoder(msi)
         segmentation_map = self.decoder(z_msi, msi_out)
-        return segmentation_map
+        return segmentation_map[:, :, :orig_ht, :orig_width]
 
 
 if __name__ == '__main__':

@@ -112,6 +112,15 @@ class JasperRidgeDataset(Dataset):
        
         return torch.view_as_real(x)[..., 0]
     
+    def downsample(self, sub_sri):
+        sub_sri = torch.FloatTensor(sub_sri).permute(2, 1, 0)
+        sz = [sub_sri.shape[1], sub_sri.shape[2]]
+        fft_B, _ = para_setting('gaussian_blur', self.factor, sz, self.sigma)
+        self.fft_B = torch.cat((torch.Tensor(np.real(fft_B)).unsqueeze(2), 
+                                torch.Tensor(np.imag(fft_B)).unsqueeze(2)),2)
+        sub_hsi = self.H_z(sub_sri, self.factor, self.fft_B).permute(2, 1, 0).numpy()
+        return sub_hsi
+    
     def __getitem__(self, idx):
         # idx is in range [0, len(indices)] but 
         # self.indices stores actual indices of bigger ds
@@ -128,14 +137,8 @@ class JasperRidgeDataset(Dataset):
         sub_sri = self.img_sri[width_index:(width_index + self.rgb_width), 
                                height_index:(height_index + self.rgb_height), :]
         
-        # Down sample to get desired HSI instance.
-        sub_sri = torch.FloatTensor(sub_sri).permute(2, 1, 0)
-        # set fft settings
-        sz = [sub_sri.shape[1], sub_sri.shape[2]]
-        fft_B, _ = para_setting('gaussian_blur', self.factor, sz, self.sigma)
-        self.fft_B = torch.cat((torch.Tensor(np.real(fft_B)).unsqueeze(2), 
-                                torch.Tensor(np.imag(fft_B)).unsqueeze(2)),2)
-        sub_hsi = self.H_z(sub_sri, self.factor, self.fft_B).permute(2, 1, 0).numpy()
+        sub_hsi = self.downsample(sub_sri)
+        
         # Original shapes: (H, W, CH) and (H, W, 3), (H, W, N).
         # sub_hsi = sub_hsi[:, :, self.channels]
         if self.transforms:

@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch
 import pdb
 from .unet_base_blocks import Conv1x3x1
+from .utils import pad_to_power_of_2
 ## Siamese Unet with Learnable Channel attention
 
 # Importance Weighted Channel Attention
@@ -69,6 +70,8 @@ class UpConcat(nn.Module):
         hsi_feat = F.interpolate(hsi_feat, scale_factor=(sx, sy))
         out = torch.cat([hsi_feat, msi_feat], dim=1)
         return self.bn(F.relu(self.conv(out)))
+        
+        
         
 class Up(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -166,10 +169,16 @@ class CASiameseUNet(nn.Module):
         self.decoder = SegmentationDecoder(latent_dim, output_channels)
         
     def forward(self, hsi, msi):
+        orig_ht, orig_width = msi.shape[2:]
+        hsi = hsi.to(torch.double)
+        msi = msi.to(torch.double)
+        msi = pad_to_power_of_2(msi)
+        hsi = pad_to_power_of_2(hsi)
+        
         z_hsi, z_msi, hsi_out, msi_out = self.encoder(hsi, msi)
         z = torch.cat([z_hsi, z_msi], dim=1)
         segmentation_map = self.decoder(z, hsi_out, msi_out)    
-        return segmentation_map
+        return segmentation_map[:, :, :orig_ht, :orig_width]
 
 
 if __name__ == '__main__':
