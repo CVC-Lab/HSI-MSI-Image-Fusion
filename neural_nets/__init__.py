@@ -1,4 +1,4 @@
-from .basic_model import CNN
+from .cnn import CNN
 from .ca_siamese_unet import CASiameseUNet
 from .unet import UNet
 from .sam_siamese_unet import SamSiameseUNet
