@@ -46,6 +46,7 @@ def main():
     test_loader = DataLoader(test_dataset,
                              batch_size=config['dataset']['batch_size'], 
                              shuffle=True)
+    print('total batches:', len(train_loader))
     DEVICE = torch.device(f"cuda:{config['device']}" if torch.cuda.is_available() else "cpu")
     net = model_factory[model_name](**config['model']['args']).to(torch.double).to(DEVICE)
     optimizer = optim.Adam(net.parameters(), lr=0.001)

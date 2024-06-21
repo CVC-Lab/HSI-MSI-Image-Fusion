@@ -1,12 +1,12 @@
 experiment:
   name: 'exp 2'
 
-device: 0
+device: 1
 
 model:
- name: 'cnn'
+ name: 'ca_siamese'
  args:
-  hsi_in: 6  
+  hsi_in: 162  
   msi_in: 3
   latent_dim: 256
   output_channels: 6

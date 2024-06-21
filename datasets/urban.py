@@ -117,7 +117,8 @@ class UrbanDataset(Dataset):
         # Max indices along width/height dimension for subimage extraction.
         self.max_width_index = self.width - self.rgb_width + 1
         self.max_height_index = self.height - self.rgb_height + 1
-        indices = list(range(self.max_width_index * self.max_height_index))
+        stride = 8 # important for controlling size of dataset
+        indices = list(range(0, self.max_width_index * self.max_height_index, stride))
         train_indices, test_indices = train_test_split(
             indices, test_size=(1 - split_ratio), random_state=seed
         )
