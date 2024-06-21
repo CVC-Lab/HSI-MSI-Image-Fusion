@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 
 class FocalLoss(nn.Module):
@@ -21,6 +22,14 @@ def dice_loss(pred, target, smooth=1e-6):
     union = pred.sum() + target.sum()
     dice = (2. * intersection + smooth) / (union + smooth)
     return 1 - dice
+
+def calculate_psnr(block1, block2, num_classes):
+    mse = np.mean((block1 - block2) ** 2)
+    if mse == 0:
+        return float('inf')
+    max_pixel = num_classes - 1 
+    psnr = 20 * np.log10(max_pixel / np.sqrt(mse))
+    return psnr
     
     
 class CombinedLoss(nn.Module):

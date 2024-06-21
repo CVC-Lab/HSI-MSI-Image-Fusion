@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .utils import pad_to_power_of_2
 
 class CNN(nn.Module):
-    def __init__(self, msi_in, output_channels):
+    def __init__(self, msi_in, output_channels, **kwargs):
         super(CNN, self).__init__()
         # Define the convolutional layers
         self.conv1 = nn.Conv2d(msi_in, 64, kernel_size=3, padding=1)

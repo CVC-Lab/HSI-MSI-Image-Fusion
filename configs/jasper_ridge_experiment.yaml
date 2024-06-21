@@ -1,10 +1,10 @@
 experiment:
   name: 'exp 1'
 
-device: 1
+device: 0
 
 model:
- name: 'ca_siamese'
+ name: 'cnn'
  args:
   hsi_in: 6  
   msi_in: 3

@@ -163,7 +163,7 @@ class SegmentationDecoder(nn.Module):
         return x
 
 class CASiameseUNet(nn.Module):
-    def __init__(self, hsi_in, msi_in, latent_dim, output_channels):
+    def __init__(self, hsi_in, msi_in, latent_dim, output_channels, **kwargs):
         super().__init__()
         self.encoder = SiameseEncoder(hsi_in, msi_in, latent_dim)
         self.decoder = SegmentationDecoder(latent_dim, output_channels)

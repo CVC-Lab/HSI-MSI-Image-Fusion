@@ -13,6 +13,9 @@ from einops import rearrange
 from PIL import Image
 import pdb
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
+from torchmetrics import JaccardIndex
+import matplotlib.pyplot as plt
+
 
 # Define the color mapping for each class
 color_mapping = {
@@ -42,6 +45,33 @@ def save_colored_image(image, file_path):
     pil_image.save(file_path)
 
 
+def calculate_miou(pred_labels, gt_labels, num_classes):
+    miou = MeanIoU(num_classes=num_classes, per_class=True)
+    return miou(pred_labels, gt_labels).mean().item()
+    
+
+def miou_blocks(image1, image2, block_size, num_classes):
+    h, w = image1.shape[:2]
+    miou_values = np.zeros((h // block_size, w // block_size))
+
+    for i in range(0, h, block_size):
+        for j in range(0, w, block_size):
+            block1 = image1[i:i+block_size, j:j+block_size]
+            block2 = image2[i:i+block_size, j:j+block_size]
+            # print(f"miou ({i}, {j}): {calculate_miou(block1, block2)}" )
+            miou_values[i // block_size, j // block_size] = calculate_miou(block1, 
+                                                                           block2,
+                                                                           num_classes)
+    
+    return miou_values
+
+def plot_heatmap(values, output_path):
+    plt.imshow(values, cmap='YlOrRd', interpolation='nearest')
+    plt.axis('off')
+    plt.savefig(output_path, bbox_inches='tight')
+    plt.close()
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Run deep learning experiment")
     parser.add_argument("--config", type=str, required=True, help="Path to the config file")
@@ -68,7 +98,6 @@ def main():
     num_classes = 4
     miou = MeanIoU(num_classes=num_classes, per_class=True)
     gdice = GeneralizedDiceScore(num_classes=num_classes, include_background=False)
-    
     sri, msi, gt = train_dataset.img_sri, train_dataset.img_rgb, train_dataset.gt
     if not os.path.exists('images/gt.png'):
         preds = np.argmax(gt, axis=-1)
@@ -86,7 +115,15 @@ def main():
     gdice_score = gdice(predictions[None, :, :], torch.from_numpy(np.argmax(gt, axis=-1))[None, :, :]).numpy()
     print('miou:', miou_score)
     print('gDice:', gdice_score)
-    pred_img = predictions_to_colored_image(predictions)
-    save_colored_image(pred_img, f'images/{model_name}.png')
+    # pred_img = predictions_to_colored_image(predictions)
+    # save_colored_image(pred_img, f'images/{model_name}.png')
+    
+    # # Calculate and save MIOU heatmap
+    block_size = 10
+    # gt_colored = predictions_to_colored_image(np.argmax(gt, axis=-1))
+    # pred_colored = predictions_to_colored_image(predictions.numpy())
+    miou_values = miou_blocks(predictions, torch.from_numpy(np.argmax(gt, axis=-1)), block_size, num_classes)
+    plot_heatmap(miou_values, f'images/{model_name}_miou_heatmap.png')
+
     
 main()

@@ -83,7 +83,7 @@ class SegmentationDecoder(nn.Module):
         return x
 
 class UNet(nn.Module):
-    def __init__(self, msi_in, latent_dim, output_channels):
+    def __init__(self, msi_in, latent_dim, output_channels, **kwargs):
         super().__init__()
         self.encoder = Encoder(msi_in, latent_dim)
         self.decoder = SegmentationDecoder(latent_dim, output_channels)

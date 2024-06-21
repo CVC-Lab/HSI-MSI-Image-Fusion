@@ -47,12 +47,12 @@ def main():
                              shuffle=True)
     DEVICE = torch.device(f"cuda:{config['device']}" if torch.cuda.is_available() else "cpu")
     net = model_factory[model_name](**config['model']['args']).to(torch.double).to(DEVICE)
-    optimizer = optim.Adam(net.parameters(), lr=0.001)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
-                                                        mode='min', factor=0.5, patience=3)
-    main_training_loop(train_loader, net, optimizer, scheduler, save_path=save_path,
-                    num_epochs=40, device=DEVICE, log_interval=2)
+    # optimizer = optim.Adam(net.parameters(), lr=0.001)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
+    #                                                     mode='min', factor=0.5, patience=3)
+    # main_training_loop(train_loader, net, optimizer, scheduler, save_path=save_path,
+    #                 num_epochs=40, device=DEVICE, log_interval=2)
 
-    mIOU, gdice = test(test_loader, net, save_path=save_path, num_classes=4)
+    mIOU, gdice, psnr = test(test_loader, net, save_path=save_path, num_classes=4)
     print(f"mIOU: {mIOU}, gdice: {gdice}")
 main()
