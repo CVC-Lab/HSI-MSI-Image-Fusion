@@ -1,0 +1,23 @@
+experiment:
+  name: 'exp 2'
+
+device: 0
+
+model:
+ name: 'cnn'
+ args:
+  hsi_in: 6  
+  msi_in: 3
+  latent_dim: 256
+  output_channels: 6
+
+dataset:
+  type: urban
+  kwargs:
+    data_dir: '/mnt/data/shubham/hsi_msi/urban'
+    rgb_width: 64
+    rgb_height: 64
+    hsi_width: 32 
+    hsi_height: 32
+    
+  batch_size: 16

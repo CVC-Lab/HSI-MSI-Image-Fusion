@@ -32,7 +32,8 @@ def main():
 
     torch.cuda.set_device(config['device'])
     model_name = config['model']['name']
-    save_path = f'models/trained_{model_name}_final_noisy.pth'
+    dataset_name = config['dataset']['type']
+    save_path = f'models/trained_{model_name}_{dataset_name}_final_noisy.pth'
     train_dataset = dataset_factory[config['dataset']['type']](
                     **config['dataset']['kwargs'], mode="train", 
                     transforms=apply_augmentation)
@@ -47,11 +48,11 @@ def main():
                              shuffle=True)
     DEVICE = torch.device(f"cuda:{config['device']}" if torch.cuda.is_available() else "cpu")
     net = model_factory[model_name](**config['model']['args']).to(torch.double).to(DEVICE)
-    # optimizer = optim.Adam(net.parameters(), lr=0.001)
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
-    #                                                     mode='min', factor=0.5, patience=3)
-    # main_training_loop(train_loader, net, optimizer, scheduler, save_path=save_path,
-    #                 num_epochs=40, device=DEVICE, log_interval=2)
+    optimizer = optim.Adam(net.parameters(), lr=0.001)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
+                                                        mode='min', factor=0.5, patience=3)
+    main_training_loop(train_loader, net, optimizer, scheduler, save_path=save_path,
+                    num_epochs=40, device=DEVICE, log_interval=2)
 
     mIOU, gdice, psnr = test(test_loader, net, save_path=save_path, num_classes=4)
     print(f"mIOU: {mIOU}, gdice: {gdice}")
