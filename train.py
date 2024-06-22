@@ -55,6 +55,7 @@ def main():
     main_training_loop(train_loader, net, optimizer, scheduler, save_path=save_path,
                     num_epochs=40, device=DEVICE, log_interval=2)
 
-    mIOU, gdice, psnr = test(test_loader, net, save_path=save_path, num_classes=4)
+    mIOU, gdice = test(test_loader, net, save_path=save_path, 
+                       num_classes=config['model']['args']['output_channels'])
     print(f"mIOU: {mIOU}, gdice: {gdice}")
 main()
