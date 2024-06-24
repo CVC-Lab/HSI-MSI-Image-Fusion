@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
-from losses import CombinedLoss, calculate_psnr
+from .losses import CombinedLoss, calculate_psnr
 from tqdm import tqdm
 import pdb
 
@@ -58,7 +58,4 @@ def test(testloader, net, save_path, num_classes, device=DEVICE):
             truth_labels.append(torch.argmax(labels_batch, axis=1))
     miou_score = miou(torch.cat(predictions, axis=0), torch.cat(truth_labels, axis=0)).numpy()
     gdice_score = gdice(torch.cat(predictions, axis=0), torch.cat(truth_labels, axis=0)).numpy()
-    # psnr_score = calculate_psnr(torch.cat(predictions, axis=0).numpy(), 
-    #                             torch.cat(truth_labels, axis=0).numpy(),
-    #                             num_classes=num_classes)
     return miou_score, gdice_score

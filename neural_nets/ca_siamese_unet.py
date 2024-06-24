@@ -4,6 +4,7 @@ import torch
 import pdb
 from .unet_base_blocks import Conv1x3x1
 from .utils import pad_to_power_of_2
+from einops import rearrange
 ## Siamese Unet with Learnable Channel attention
 
 # Importance Weighted Channel Attention
@@ -18,14 +19,8 @@ class IWCA(nn.Module):
                                     kernel_size=1, groups=in_channels)
         self.bn1 = nn.BatchNorm2d(in_channels)
         self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
-        
-        # # mixing of channel information
-        self.c2 = nn.Conv2d(in_channels, in_channels, 
-                                    kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(in_channels)
-        self.c3 = nn.Conv2d(in_channels, in_channels, 
-                                    kernel_size=1)
-        self.bn3 = nn.BatchNorm2d(in_channels)
+        # self.channel_conv = nn.Conv1d(1, 1, kernel_size=3, 
+        #                               padding=3//2, bias=False)
         self.sigmoid = nn.Sigmoid()
         self.importance_wts = None
 
@@ -34,12 +29,15 @@ class IWCA(nn.Module):
         x_c = self.bn0(F.relu(self.c0(x)))
         x_c = self.bn1(F.relu(self.c1(x_c)))
         # Global Average Pooling
-        avg_out = self.global_avg_pool(x_c)
+        x_avg = self.global_avg_pool(x_c)
         # Apply sigmoid to get the importance weights
-        importance_weights = self.sigmoid(avg_out)
+        # Use einops to reshape for 1D convolution
+        # x_c = x_c.squeeze()[:, None, :] # B 1 C
+        # x_c = self.channel_conv(x_c)
+        # x_c = rearrange(x_c, 'b 1 c -> b c 1 1')
+        importance_weights = self.sigmoid(x_avg)
+        
         self.importance_wts = importance_weights
-        x_s = self.bn2(F.relu(self.c2(x)))
-        x_s = self.bn3(F.relu(self.c3(x_s)))
         # Scale the original input
         out = x * importance_weights
         return out

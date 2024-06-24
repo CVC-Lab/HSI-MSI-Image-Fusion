@@ -36,7 +36,7 @@ wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
 ## Run experiments
 
 ```sh
-python train.py --config configs/jasper_ridge_experiment.yaml
+python -m scripts.train --config configs/jasper_ridge_experiment.yaml
 ```
 
 

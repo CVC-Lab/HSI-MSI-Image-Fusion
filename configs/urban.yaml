@@ -4,15 +4,15 @@ experiment:
 device: 1
 
 model:
- name: 'ca_siamese'
- args:
+ name: 'unet'
+ kwargs:
   hsi_in: 162  
   msi_in: 3
   latent_dim: 256
   output_channels: 6
 
 dataset:
-  type: urban
+  name: urban
   kwargs:
     data_dir: '/mnt/data/shubham/hsi_msi/urban'
     rgb_width: 64

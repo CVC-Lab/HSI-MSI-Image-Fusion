@@ -4,16 +4,17 @@ experiment:
 device: 0
 
 model:
- name: 'cnn'
- args:
-  hsi_in: 6  
+ name: 'ca_siamese'
+ kwargs:
+  hsi_in: 224
   msi_in: 3
   latent_dim: 256
   output_channels: 4
 
 dataset:
-  type: jasper_ridge
+  name: jasper_ridge
   kwargs:
+    classes: ["road", "soil", "water", "tree"]
     single_img_path: 'data/jasper/jasper_ridge_224.mat'
     single_gt_path: 'data/jasper/jasper_ridge_gt.mat'
     start_band: 380
@@ -22,5 +23,5 @@ dataset:
     rgb_height: 16
     hsi_width: 8 
     hsi_height: 8
-    channels: [20, 60, 80, 100, 120, 140]
+    # channels: [20, 60, 80, 100, 120, 140]
   batch_size: 16

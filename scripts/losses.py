@@ -23,11 +23,11 @@ def dice_loss(pred, target, smooth=1e-6):
     dice = (2. * intersection + smooth) / (union + smooth)
     return 1 - dice
 
-def calculate_psnr(block1, block2, num_classes):
+def calculate_psnr(block1, block2):
     mse = np.mean((block1 - block2) ** 2)
     if mse == 0:
         return float('inf')
-    max_pixel = num_classes - 1 
+    max_pixel = 255
     psnr = 20 * np.log10(max_pixel / np.sqrt(mse))
     return psnr
     
