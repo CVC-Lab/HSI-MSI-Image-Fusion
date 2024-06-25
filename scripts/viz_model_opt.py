@@ -14,7 +14,8 @@ from PIL import Image
 import pdb
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 import matplotlib.pyplot as plt
-from losses import calculate_psnr
+from .losses import calculate_psnr
+from .train_utils import parse_args
 
 
 # Define the color mapping for each class
@@ -71,11 +72,6 @@ def plot_heatmap(values, output_path):
     plt.savefig(output_path, bbox_inches='tight')
     plt.close()
 
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Run deep learning experiment")
-    parser.add_argument("--config", type=str, required=True, help="Path to the config file")
-    return parser.parse_args()
 
 
 def main():

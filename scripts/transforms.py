@@ -72,7 +72,7 @@ class AddSingleScattering(iaa.meta.Augmenter):
 
 # Example usage in an imgaug pipeline
 augmentation_pipeline = iaa.Sequential([
-    # iaa.MotionBlur(k=15, angle=[-45, 45]),
+    iaa.MotionBlur(k=15, angle=[-45, 45]),
     # iaa.GammaContrast(1.5, per_channel=True),
     AddSingleScattering(beta=0.1, A=0.8, depth_method='random')
 ])

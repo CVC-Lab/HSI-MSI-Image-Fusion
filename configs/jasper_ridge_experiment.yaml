@@ -2,9 +2,10 @@ experiment:
   name: 'exp 1'
 
 device: 0
+num_epochs: 10
 
 model:
- name: 'ca_siamese'
+ name: 'unet'
  kwargs:
   hsi_in: 224
   msi_in: 3

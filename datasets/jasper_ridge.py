@@ -9,7 +9,7 @@ from .base_dataset import BaseSegmentationDataset
 
 RGB = np.array([630.0, 532.0, 465.0])
 
-def input_processing(img_path, gt_path, start_band, end_band):
+def input_processing(img_path, gt_path):
     '''Processing mat files input images to output a tuple of (full SRI, RGB, and gt mask)'''
     # Get ground truth label
     tmp = sio.loadmat(gt_path)
@@ -20,14 +20,7 @@ def input_processing(img_path, gt_path, start_band, end_band):
     max_value = tmp['maxValue'][0][0]
     img_sri = tmp['Y']/max_value
     img_sri = img_sri.swapaxes(0, 1).reshape(height, width, -1).swapaxes(0, 1)   
-    num_bands = img_sri.shape[-1]
-
-    # Infer RGB from SRI 
-    dist_band = (end_band - start_band)/ (num_bands - 1)
-    RGB_indices = np.array((RGB - start_band)/dist_band, dtype=int)
-    img_rgb = spy.get_rgb(img_sri, (RGB_indices[0], RGB_indices[1], RGB_indices[2]))
-    
-    return img_sri, img_rgb, gt
+    return img_sri, gt
 
 
 class JasperRidgeDataset(BaseSegmentationDataset):
@@ -40,14 +33,25 @@ class JasperRidgeDataset(BaseSegmentationDataset):
                  channels=None, 
                  mode="train", transforms=None, split_ratio=0.8, seed=42, **kwargs):
         self.channels = channels
-        processed_input = input_processing(single_img_path, single_gt_path,
-                                           start_band, end_band)
-        super().__init__(img_sri=processed_input[0], 
-                         img_rgb=processed_input[1],
-                         gt=processed_input[2],
+        self.start_band = start_band
+        self.end_band = end_band
+        img_sri, gt = input_processing(single_img_path, single_gt_path)
+        img_rgb = self.get_rgb(img_sri)
+        super().__init__(img_sri=img_sri, 
+                         img_rgb=img_rgb,
+                         gt=gt,
                          rgb_width=rgb_width,
                          rgb_height=rgb_height, hsi_width=hsi_width, 
                          hsi_height=hsi_height,
                          channels=None, 
                          mode=mode, transforms=transforms, 
                          split_ratio=split_ratio, seed=seed, stride=8)
+        
+        
+    def get_rgb(self, img_sri):
+        num_bands = img_sri.shape[-1]
+        # Infer RGB from SRI 
+        dist_band = (self.end_band - self.start_band)/ (num_bands - 1)
+        RGB_indices = np.array((RGB - self.start_band)/dist_band, dtype=int)
+        img_rgb = spy.get_rgb(img_sri, (RGB_indices[0], RGB_indices[1], RGB_indices[2]))
+        return img_rgb

@@ -53,14 +53,8 @@ def process_hyperspectral_data(img):
     # Reshape and normalize the data
     hyperspectral_image = img['Y'].reshape((nBand, nRow, nCol)).transpose(1, 2, 0)
     hyperspectral_image = hyperspectral_image / maxValue
-    closest_bands = find_closest_bands(wavelengths, RGB_wavelengths)
-    # Extract and normalize the RGB bands
-    R_band = hyperspectral_image[:, :, closest_bands[0]]
-    G_band = hyperspectral_image[:, :, closest_bands[1]]
-    B_band = hyperspectral_image[:, :, closest_bands[2]]
-    # Stack bands to create the RGB image
-    RGB_image = np.stack((R_band, G_band, B_band), axis=-1)
-    return hyperspectral_image, RGB_image
+    
+    return hyperspectral_image
 
 
 def input_processing(img_path, gt_path, start_band=None, end_band=None):
@@ -70,10 +64,9 @@ def input_processing(img_path, gt_path, start_band=None, end_band=None):
     gt = process_ground_truth_data(tmp)
     # Get full SRI
     img = sio.loadmat(img_path) # (162, 94249)
-    img_sri, img_rgb = process_hyperspectral_data(img)
+    img_sri = process_hyperspectral_data(img)
     gt = rearrange(gt, "C H W -> H W C")
-
-    return img_sri, img_rgb, gt
+    return img_sri, gt
 
 
 class UrbanDataset(BaseSegmentationDataset):
@@ -85,16 +78,27 @@ class UrbanDataset(BaseSegmentationDataset):
         data_dir = Path(data_dir)
         single_img_path = data_dir / "Urban_R162.mat"
         single_gt_path = data_dir / "groundTruth_Urban_end6/end6_groundTruth.mat"
-        processed_input = input_processing(single_img_path, single_gt_path)
-        super().__init__(img_sri=processed_input[0], 
-                         img_rgb=processed_input[1],
-                         gt=processed_input[2],
+        img_sri, gt = input_processing(single_img_path, single_gt_path)
+        img_rgb = self.get_rgb(img_sri)
+        super().__init__(img_sri=img_sri, 
+                         img_rgb=img_rgb,
+                         gt=gt,
                          rgb_width=rgb_width,
                          rgb_height=rgb_height, hsi_width=hsi_width, 
                          hsi_height=hsi_height,
                          channels=None, 
                          mode=mode, transforms=transforms, 
                          split_ratio=split_ratio, seed=seed, stride=8)
+    
+    def get_rgb(self, img_sri):
+        closest_bands = find_closest_bands(wavelengths, RGB_wavelengths)
+        # Extract and normalize the RGB bands
+        R_band = img_sri[:, :, closest_bands[0]]
+        G_band = img_sri[:, :, closest_bands[1]]
+        B_band = img_sri[:, :, closest_bands[2]]
+        # Stack bands to create the RGB image
+        RGB_image = np.stack((R_band, G_band, B_band), axis=-1)
+        return RGB_image
 
 
 if __name__ == '__main__':

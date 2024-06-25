@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from neural_nets import model_factory
 from datasets import dataset_factory
-from .train_utils import main_training_loop, test
+from .train_utils import main_training_loop, test, parse_args
 from .transforms import apply_augmentation
 import pdb
 
@@ -18,11 +18,6 @@ np.random.seed(42)
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 torch.cuda.manual_seed_all(42)
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Run deep learning experiment")
-    parser.add_argument("--config", type=str, required=True, help="Path to the config file")
-    return parser.parse_args()
 
 
 def main():
@@ -53,7 +48,7 @@ def main():
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 
                                                         mode='min', factor=0.5, patience=3)
     main_training_loop(train_loader, net, optimizer, scheduler, save_path=save_path,
-                    num_epochs=40, device=DEVICE, log_interval=2)
+                    num_epochs=config["num_epochs"], device=DEVICE, log_interval=2)
 
     mIOU, gdice = test(test_loader, net, save_path=save_path, 
                        num_classes=config['model']['kwargs']['output_channels'])

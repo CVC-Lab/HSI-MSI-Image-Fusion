@@ -126,3 +126,6 @@ class BaseSegmentationDataset(Dataset):
             sub_gt = np.moveaxis(sub_gt, 2, 0)
         
         return sub_hsi, sub_rgb, sub_gt
+    
+    def get_rgb(self, img_sri):
+        raise NotImplementedError("write logic for extracting RGB from SRI")

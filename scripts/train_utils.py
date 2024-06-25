@@ -4,11 +4,17 @@ import numpy as np
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 from .losses import CombinedLoss, calculate_psnr
 from tqdm import tqdm
+import argparse
 import pdb
 
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 loss_fn = CombinedLoss()
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run deep learning experiment")
+    parser.add_argument("--config", type=str, required=True, help="Path to the config file")
+    return parser.parse_args()
 
 def main_training_loop(trainloader, net,
                        optimizer, scheduler, num_epochs, 
