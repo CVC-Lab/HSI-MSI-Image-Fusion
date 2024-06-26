@@ -115,12 +115,13 @@ class BaseSegmentationDataset(Dataset):
         sub_sri = self.img_sri[width_index:(width_index + self.rgb_width), 
                                height_index:(height_index + self.rgb_height), :]
         
-        sub_hsi = self.downsample(sub_sri)
         
         if self.transforms:
-            sub_hsi, sub_rgb, sub_gt = self.transforms(sub_hsi, sub_rgb, sub_gt)
+            sub_hsi, sub_rgb, sub_gt = self.transforms(sub_sri, sub_gt,
+                                                       self.get_rgb, self.downsample)
             
         else:
+            sub_hsi = self.downsample(sub_sri)
             sub_hsi = np.moveaxis(sub_hsi, 2, 0)
             sub_rgb = np.moveaxis(sub_rgb, 2, 0)
             sub_gt = np.moveaxis(sub_gt, 2, 0)

@@ -7,6 +7,8 @@ import cv2
 import imgaug.augmenters as iaa
 import matplotlib.pyplot as plt
 from einops import rearrange
+import pdb
+from .contrast_enhancement_parallel import contrast_enhancement_multispectral
 
 # Define albumentations transforms
 albumentations_transform = A.Compose([
@@ -36,7 +38,7 @@ is_check_shapes=False)
 
 class AddSingleScattering(iaa.meta.Augmenter):
     def __init__(self, beta=0.1, A=0.8, depth_method='linear', name=None, deterministic=False, random_state=None):
-        super(AddSingleScattering, self).__init__(name=name, deterministic=deterministic, random_state=random_state)
+        super(AddSingleScattering, self).__init__(name=name, random_state=random_state)
         self.beta = beta
         self.A = A
         self.depth_method = depth_method
@@ -78,10 +80,13 @@ augmentation_pipeline = iaa.Sequential([
 ])
 
 # Example application
-def apply_augmentation(hsi, msi, gt):
+def apply_augmentation(hsi, gt, get_rgb, downsample, conductivity=0.95, window_size=5):
     hsi_aug = augmentation_pipeline(image=hsi)
-    msi_aug = augmentation_pipeline(image=msi)
-    # gt_aug = augmentation_pipeline(image=gt)
+    hsi_aug = contrast_enhancement_multispectral((hsi_aug*255).astype(np.uint8), 
+                                                window_size=window_size, 
+                                                conductivity=conductivity) / 255
+    msi_aug = get_rgb(hsi_aug)
+    hsi_aug = downsample(hsi_aug)
     hsi_aug = rearrange(hsi_aug, "H W C -> C H W")
     msi_aug = rearrange(msi_aug, "H W C -> C H W")
     gt = rearrange(gt, "H W C -> C H W")
@@ -92,6 +97,9 @@ def apply_augmentation(hsi, msi, gt):
 # Apply transformations to an image
 def apply_transforms(hsi, msi, gt):
     transformed = albumentations_transform(image=hsi, msi=msi, gt=gt)
+    # pdb.set_trace()
+    # transformed['image'] = contrast_enhancement_multispectral(transformed['image'], 
+    #                                                 window_size=5, conductivity=0.95)
     transformed['gt'] = rearrange(transformed['gt'], "H W C -> C H W")
     return transformed['image'], transformed['msi'], transformed['gt']
 
