@@ -5,6 +5,10 @@ from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 from .losses import CombinedLoss, calculate_psnr
 from tqdm import tqdm
 import argparse
+import csv
+from pathlib import Path
+from smac import RunHistory
+import json
 import pdb
 
 
@@ -17,7 +21,7 @@ def parse_args():
     return parser.parse_args()
 
 def main_training_loop(trainloader, net,
-                       optimizer, scheduler, num_epochs, 
+                       optimizer, scheduler, num_epochs, writer=None,
                        device=DEVICE, log_interval=5,
                        save_path='models/trained_model.pth'):
     ''' Main (standard) training loop'''
@@ -37,6 +41,7 @@ def main_training_loop(trainloader, net,
             optimizer.step()
             running_loss += loss.item()
         ep_loss = loss.item()/ds_len
+        # writer.add_scalar('Average Loss per Epoch', ep_loss, epoch)
         if epoch % log_interval == 0:
             print(f"loss:{ep_loss}")
         # save model if lowest loss
@@ -65,3 +70,41 @@ def test(testloader, net, save_path, num_classes, device=DEVICE):
     miou_score = miou(torch.cat(predictions, axis=0), torch.cat(truth_labels, axis=0)).numpy()
     gdice_score = gdice(torch.cat(predictions, axis=0), torch.cat(truth_labels, axis=0)).numpy()
     return miou_score, gdice_score
+
+
+def save_runhistory_to_csv(run_history: RunHistory, filename: str | Path = "runhistory.csv") -> None:
+    """Saves RunHistory to disk in CSV format.
+
+    Parameters
+    ----------
+    run_history : RunHistory
+        The instance of RunHistory to be saved.
+    filename : str | Path, defaults to "runhistory.csv"
+    """
+    if isinstance(filename, str):
+        filename = Path(filename)
+
+    assert str(filename).endswith(".csv")
+    filename.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Write the header
+        writer.writerow([
+            "config_id", "instance", "seed", "budget", "cost", 
+            "time", "status", "starttime", "endtime", "additional_info"
+        ])
+        # Write the data
+        for k, v in run_history._data.items():
+            writer.writerow([
+                int(k.config_id),
+                str(k.instance) if k.instance is not None else None,
+                int(k.seed) if k.seed is not None else None,
+                float(k.budget) if k.budget is not None else None,
+                v.cost,
+                v.time,
+                v.status.name,
+                v.starttime,
+                v.endtime,
+                json.dumps(v.additional_info) if v.additional_info else None
+            ])
