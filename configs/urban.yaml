@@ -1,10 +1,11 @@
 experiment:
   name: 'exp 2'
 
-device: 1
+device: 0
+num_epochs: 40
 
 model:
- name: 'unet'
+ name: 'ca_siamese'
  kwargs:
   hsi_in: 162  
   msi_in: 3
@@ -20,4 +21,9 @@ dataset:
     hsi_width: 32 
     hsi_height: 32
     
-  batch_size: 16
+  batch_size: 1024
+
+loss: 
+  name: focal
+  kwargs:
+    gamma: 3.0

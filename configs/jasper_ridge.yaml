@@ -5,7 +5,7 @@ device: 1
 num_epochs: 40
 
 model:
- name: 'ca_siamese'
+ name: 'cnn'
  kwargs:
   hsi_in: 6
   msi_in: 3
@@ -26,3 +26,8 @@ dataset:
     hsi_height: 8
     channels: [20, 60, 80, 100, 120, 140]
   batch_size: 2048
+
+loss: 
+  name: focal
+  kwargs:
+    gamma: 3.0
