@@ -5,7 +5,7 @@ import spectral as spy
 import pdb
 from einops import rearrange
 import torch
-from .base_dataset import BaseSegmentationDataset
+from .base_dataset import BaseSegmentationDataset, adjust_gamma_hyperspectral
 from .contrast_enhancement import contrast_enhancement
 
 RGB = np.array([630.0, 532.0, 465.0])
@@ -24,22 +24,7 @@ def input_processing(img_path, gt_path):
     return img_sri, gt
 
 
-# lets just use gamma correction
-def adjust_gamma_hyperspectral(image, gamma=0.5):
-    epsilon = 1e-8
-    # Calculate the inverse gamma
-    invGamma = 1.0 / gamma
-    # Initialize an array to store the gamma-corrected image
-    gamma_corrected_image = np.zeros_like(image)
-    # Apply gamma correction to each spectral band
-    for band in range(image.shape[2]):
-        # Normalize the band to [0, 1]
-        normalized_band = image[:, :, band] / (np.max(image[:, :, band]) + epsilon)
-        # Apply gamma correction
-        gamma_corrected_band = np.power(normalized_band, invGamma)
-        # Scale back to original range
-        gamma_corrected_image[:, :, band] = gamma_corrected_band * np.max(image[:, :, band])
-    return gamma_corrected_image
+
 
 
 class JasperRidgeDataset(BaseSegmentationDataset):
@@ -54,15 +39,17 @@ class JasperRidgeDataset(BaseSegmentationDataset):
                  transforms=None, 
                  split_ratio=0.8, seed=42, 
                  window_size=5, conductivity=0.95,
+                 gamma=0.4, contrast_enhance=True,
                  **kwargs):
         self.channels = channels
         self.start_band = start_band
         self.end_band = end_band
         img_sri, gt = input_processing(single_img_path, single_gt_path)
-        img_sri = adjust_gamma_hyperspectral(img_sri, gamma=0.4)
-        # img_sri = contrast_enhancement((img_sri*255).astype(np.uint8), 
-        #                                     window_size=window_size, 
-        #                                     conductivity=conductivity)/255
+        img_sri = adjust_gamma_hyperspectral(img_sri, gamma=gamma)
+        if contrast_enhance:
+            img_sri = contrast_enhancement((img_sri*255).astype(np.uint8), 
+                                                window_size=window_size, 
+                                                conductivity=conductivity)/255
         img_rgb = self.get_rgb(img_sri)
         super().__init__(img_sri=img_sri, 
                          img_rgb=img_rgb,

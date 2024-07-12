@@ -6,7 +6,8 @@ from torch.utils.data import Dataset
 import pdb
 from einops import rearrange
 import torch
-from .base_dataset import BaseSegmentationDataset
+from .base_dataset import BaseSegmentationDataset, adjust_gamma_hyperspectral
+from .contrast_enhancement import contrast_enhancement
 from pathlib import Path
 
 """
@@ -74,11 +75,19 @@ class UrbanDataset(BaseSegmentationDataset):
     def __init__(self, data_dir, 
                  rgb_width, rgb_height,
                  hsi_width, hsi_height, 
-                 mode="train", transforms=None, split_ratio=0.8, seed=42):
+                 mode="train", transforms=None, split_ratio=0.8, seed=42,
+                 window_size=5, conductivity=0.95, 
+                 gamma=0.4, contrast_enhance=True,
+                 **kwargs):
         data_dir = Path(data_dir)
         single_img_path = data_dir / "Urban_R162.mat"
         single_gt_path = data_dir / "groundTruth_Urban_end6/end6_groundTruth.mat"
         img_sri, gt = input_processing(single_img_path, single_gt_path)
+        img_sri = adjust_gamma_hyperspectral(img_sri, gamma=gamma)
+        if contrast_enhance:
+            img_sri = contrast_enhancement((img_sri*255).astype(np.uint8), 
+                                                window_size=window_size, 
+                                                conductivity=conductivity)/255
         img_rgb = self.get_rgb(img_sri)
         super().__init__(img_sri=img_sri, 
                          img_rgb=img_rgb,

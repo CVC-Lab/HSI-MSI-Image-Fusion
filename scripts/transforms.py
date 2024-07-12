@@ -71,15 +71,12 @@ class AddSingleScattering(iaa.meta.Augmenter):
     def get_parameters(self):
         return [self.beta, self.A, self.depth_method]
 
-# Example usage in an imgaug pipeline
-augmentation_pipeline = iaa.Sequential([
-    # iaa.MotionBlur(k=15, angle=[-45, 45]),
-    # iaa.GammaContrast(1.5, per_channel=True),
-    AddSingleScattering(beta=0.1, A=0.8, depth_method='random')
-])
 
-# Example application
-def apply_augmentation(hsi, gt, get_rgb, downsample, conductivity=0.95, window_size=3):
+
+def apply_augmentation(hsi, gt, get_rgb, downsample, A=0.8):
+    augmentation_pipeline = iaa.Sequential([
+        AddSingleScattering(beta=0.1, A=A, depth_method='random')
+    ])
     hsi_aug = augmentation_pipeline(image=hsi)
     msi_aug = get_rgb(hsi_aug)
     hsi_aug = downsample(hsi_aug)

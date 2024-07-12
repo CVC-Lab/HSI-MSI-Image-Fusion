@@ -36,7 +36,10 @@ class CNN(nn.Module):
         x = F.relu(self.upconv4(x4))
         x = F.relu(self.upconv3(x))
         x = self.upconv2(x)
-        return x[:, :, :orig_ht, :orig_width]
+        preds = x[:, :, :orig_ht, :orig_width]
+        return {
+            'preds': preds
+        }
 
 if __name__ == '__main__':
     # Test the model

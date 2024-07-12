@@ -22,6 +22,23 @@ def para_setting(kernel_type, sf, sz, sigma):
     return fft_B,fft_BT
 
 
+# lets just use gamma correction
+def adjust_gamma_hyperspectral(image, gamma=0.5):
+    epsilon = 1e-8
+    # Calculate the inverse gamma
+    invGamma = 1.0 / gamma
+    # Initialize an array to store the gamma-corrected image
+    gamma_corrected_image = np.zeros_like(image)
+    # Apply gamma correction to each spectral band
+    for band in range(image.shape[2]):
+        # Normalize the band to [0, 1]
+        normalized_band = image[:, :, band] / (np.max(image[:, :, band]) + epsilon)
+        # Apply gamma correction
+        gamma_corrected_band = np.power(normalized_band, invGamma)
+        # Scale back to original range
+        gamma_corrected_image[:, :, band] = gamma_corrected_band * np.max(image[:, :, band])
+    return gamma_corrected_image
+
 class BaseSegmentationDataset(Dataset):
     ''' Simple dataset from subimage of a single HSI image'''
     def __init__(self,
@@ -30,8 +47,9 @@ class BaseSegmentationDataset(Dataset):
                  hsi_width, hsi_height,
                  channels=None, 
                  mode="train", transforms=None, 
-                 split_ratio=0.8, seed=42, 
+                 split_ratio=0.8, seed=42, A=0.8,
                  stride=1, **kwargs):
+        self.A = A
         self.channels = channels
         self.img_sri, self.img_rgb, self.gt = img_sri, img_rgb, gt
         self.num_classes = self.gt.shape[-1]
@@ -115,11 +133,10 @@ class BaseSegmentationDataset(Dataset):
         sub_sri = self.img_sri[width_index:(width_index + self.rgb_width), 
                                height_index:(height_index + self.rgb_height), :]
         
-        
         if self.transforms:
             sub_hsi, sub_rgb, sub_gt = self.transforms(sub_sri, sub_gt,
-                                                       self.get_rgb, self.downsample)
-            
+                                                       self.get_rgb, 
+                                                       self.downsample, self.A)
         else:
             sub_hsi = self.downsample(sub_sri)
             sub_hsi = np.moveaxis(sub_hsi, 2, 0)

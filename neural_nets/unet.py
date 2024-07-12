@@ -37,8 +37,8 @@ class Up(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         # upsample latent to match spatial extent
-        self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1)
-        self.bn = nn.BatchNorm2d(in_channels)
+        # self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1)
+        # self.bn = nn.BatchNorm2d(in_channels)
         self.deconv3 = nn.ConvTranspose2d(in_channels, 128, 
                                           kernel_size=3, 
                                           stride=2, padding=1, output_padding=1)
@@ -51,9 +51,9 @@ class Up(nn.Module):
                                           stride=2, padding=1, output_padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
 
-    def forward(self, z, skip_connection):
+    def forward(self, x, skip_connection):
         
-        x = self.bn(F.relu(self.conv(z)))
+        # x = self.bn(F.relu(self.conv(z)))
         x = self.bn3(F.relu(self.deconv3(x)))
         x = torch.cat((x, skip_connection[1]), dim=1) 
         x = self.bn2(F.relu(self.deconv2(x)))
@@ -93,7 +93,10 @@ class UNet(nn.Module):
         msi = pad_to_power_of_2(msi)
         z_msi, msi_out = self.encoder(msi)
         segmentation_map = self.decoder(z_msi, msi_out)
-        return segmentation_map[:, :, :orig_ht, :orig_width]
+        preds = segmentation_map[:, :, :orig_ht, :orig_width]
+        return {
+            'preds': preds
+        }
 
 
 if __name__ == '__main__':

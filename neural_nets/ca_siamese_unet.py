@@ -19,8 +19,6 @@ class IWCA(nn.Module):
                                     kernel_size=1, groups=in_channels)
         self.bn1 = nn.BatchNorm2d(in_channels)
         self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
-        # self.channel_conv = nn.Conv1d(1, 1, kernel_size=3, 
-        #                               padding=3//2, bias=False)
         self.sigmoid = nn.Sigmoid()
         self.importance_wts = None
 
@@ -30,13 +28,7 @@ class IWCA(nn.Module):
         x_c = self.bn1(F.relu(self.c1(x_c)))
         # Global Average Pooling
         x_avg = self.global_avg_pool(x_c)
-        # Apply sigmoid to get the importance weights
-        # Use einops to reshape for 1D convolution
-        # x_c = x_c.squeeze()[:, None, :] # B 1 C
-        # x_c = self.channel_conv(x_c)
-        # x_c = rearrange(x_c, 'b 1 c -> b c 1 1')
         importance_weights = self.sigmoid(x_avg)
-        
         self.importance_wts = importance_weights
         # Scale the original input
         out = x * importance_weights
@@ -62,8 +54,7 @@ class UpConcat(nn.Module):
         self.conv = nn.Conv2d(in_channels*2, in_channels, kernel_size=3, padding=1)
         self.bn = nn.BatchNorm2d(in_channels)
         
-    def forward(self, msi_feat, hsi_feat):
-        # upsample msi features
+    def forward(self, hsi_feat, msi_feat):
         sx, sy = msi_feat.shape[-2] // hsi_feat.shape[-2], msi_feat.shape[-1] // hsi_feat.shape[-1]
         hsi_feat = F.interpolate(hsi_feat, scale_factor=(sx, sy))
         out = torch.cat([hsi_feat, msi_feat], dim=1)
@@ -75,9 +66,7 @@ class Up(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         # upsample latent to match spatial extent
-        self.conv = nn.Conv2d(in_channels*2, in_channels, kernel_size=3, padding=1)
-        self.bn = nn.BatchNorm2d(in_channels)
-        self.deconv3 = nn.ConvTranspose2d(in_channels, 128, 
+        self.deconv3 = nn.ConvTranspose2d(in_channels*2, 128, 
                                           kernel_size=3, 
                                           stride=2, padding=1, output_padding=1)
         self.bn3 = nn.BatchNorm2d(128)
@@ -89,15 +78,14 @@ class Up(nn.Module):
                                           stride=2, padding=1, output_padding=1)
         self.bn1 = nn.BatchNorm2d(out_channels)
 
-    def forward(self, z, skip_connection):
-        
-        x = self.bn(F.relu(self.conv(z)))
+    def forward(self, x, skip_connection):
         x = self.bn3(F.relu(self.deconv3(x)))
         x = torch.cat((x, skip_connection[1]), dim=1) 
         x = self.bn2(F.relu(self.deconv2(x)))
         x = torch.cat((x, skip_connection[0]), dim=1)
         x = self.bn1(F.relu(self.deconv1(x)))
         return x
+
     
             
 class Up1x3x1(nn.Module):
@@ -155,10 +143,11 @@ class SegmentationDecoder(nn.Module):
 
     def forward(self, z, hsi_out, msi_out):
         # merge outputs of hsi and msi encoder
-        out2 = self.upcat2(msi_out[1], hsi_out[1])
-        out1 = self.upcat1(msi_out[0], hsi_out[0])
+        out2 = self.upcat2(hsi_out[1], msi_out[1])
+        out1 = self.upcat1(hsi_out[0], msi_out[0])
         x = self.decoder(z, [out1, out2])
         return x
+
 
 class CASiameseUNet(nn.Module):
     def __init__(self, hsi_in, msi_in, latent_dim, output_channels, **kwargs):
@@ -175,28 +164,21 @@ class CASiameseUNet(nn.Module):
         
         z_hsi, z_msi, hsi_out, msi_out = self.encoder(hsi, msi)
         z = torch.cat([z_hsi, z_msi], dim=1)
-        segmentation_map = self.decoder(z, hsi_out, msi_out)    
-        return segmentation_map[:, :, :orig_ht, :orig_width]
+        segmentation_map = self.decoder(z, hsi_out, msi_out)  
+        outputs = {
+            'preds': segmentation_map[:, :, :orig_ht, :orig_width],
+            'embeddings': [z_hsi, z_msi]
+        }  
+        return outputs
 
 
 if __name__ == '__main__':
     # usage
-    model = CASiameseUNet(31, 3, 256, 5)  # Assume output channels for segmentation map is 5
+    model = CASiameseUNet(31, 3, 256, 5).to(torch.double)  # Assume output channels for segmentation map is 5
     for i in range(1, 5):
-        hsi = torch.rand(2, 31, 64*i, 64*i)
-        msi = torch.rand(2, 3, 256*i, 256*i)
+        hsi = torch.rand(2, 31, 64*i, 64*i).double()
+        msi = torch.rand(2, 3, 256*i, 256*i).double()
         output = model(hsi, msi)
-        print(output.shape)
-        # instead of output, we will use the loss to compute which channel 
-        # inflences the training more than others
-        # lower loss also means that those channels are better
-        # full jacobian -> [2, 5, 256, 256, 2, 31, 1, 1] so take mean 
-        # jacobian computation
-        # output = model(hsi, msi)
-        # jacobian = torch.autograd.functional.jacobian(lambda x: output.mean((2, 3)), 
-        #                                 model.encoder.channel_selector.importance_wts)
-        # jacobian = jacobian.squeeze() # [2, 5, 2, 31]
-        # jacobian = jacobian.mean((0, 2)) # [5, 31]
-        # print(jacobian.shape)
+        print(output['preds'].shape)
         
 

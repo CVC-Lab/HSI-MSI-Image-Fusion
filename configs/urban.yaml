@@ -20,6 +20,11 @@ dataset:
     rgb_height: 64
     hsi_width: 32 
     hsi_height: 32
+    gamma: 0.4
+    contrast_enhance: True
+    conductivity: 0.9406637619554582
+    window_size: 5
+    A: 0.8
     
   batch_size: 1024
 
