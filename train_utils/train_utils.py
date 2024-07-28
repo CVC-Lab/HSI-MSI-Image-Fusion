@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
-from .scripts.losses import loss_factory
+from .losses import loss_factory
 from tqdm import tqdm
 import argparse
 import csv

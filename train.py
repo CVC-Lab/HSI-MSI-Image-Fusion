@@ -8,8 +8,8 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from neural_nets import model_factory
 from datasets import dataset_factory
-from .train_utils.train_utils import main_training_loop, test, parse_args
-from .transforms import apply_augmentation
+from train_utils.train_utils import main_training_loop, test, parse_args
+from adversity.transforms import apply_augmentation
 from torch.utils.tensorboard import SummaryWriter
 from ConfigSpace import Configuration, ConfigurationSpace
 from smac import HyperparameterOptimizationFacade, Scenario
@@ -71,7 +71,7 @@ def main(hyperparam_config=None, seed=42):
         mIOU, gdice = test(train_loader, net, save_path=save_path, 
                         num_classes=config['model']['kwargs']['output_channels'])
         return 1 - gdice
-# main()
+main()
 
 
 def get_best_params():
@@ -93,4 +93,4 @@ def get_best_params():
     print(f"Incumbent cost: {incumbent_cost}")
     
 
-get_best_params()
+# get_best_params()
