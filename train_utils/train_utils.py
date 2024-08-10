@@ -41,7 +41,7 @@ def main_training_loop(trainloader, net,
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-        ep_loss = loss.item()/ds_len
+        ep_loss = running_loss/ds_len
         writer.add_scalar('Average Loss per Epoch', ep_loss, epoch)
         if epoch % log_interval == 0:
             print(f"loss:{ep_loss}")

@@ -76,6 +76,7 @@ class UrbanDataset(BaseSegmentationDataset):
                  rgb_width, rgb_height,
                  hsi_width, hsi_height, 
                  mode="train", transforms=None, split_ratio=0.8, seed=42,
+                 channels=None,
                  window_size=5, conductivity=0.95, 
                  gamma=0.4, contrast_enhance=True,
                  **kwargs):
@@ -95,7 +96,7 @@ class UrbanDataset(BaseSegmentationDataset):
                          rgb_width=rgb_width,
                          rgb_height=rgb_height, hsi_width=hsi_width, 
                          hsi_height=hsi_height,
-                         channels=None, 
+                         channels=channels, 
                          mode=mode, transforms=transforms, 
                          split_ratio=split_ratio, seed=seed, stride=8)
     

@@ -11,6 +11,9 @@ model:
   msi_in: 3
   latent_dim: 256
   output_channels: 6
+  embedding:
+    name: "fourier"
+    scale: 2.0
 
 dataset:
   name: urban
@@ -24,9 +27,11 @@ dataset:
     contrast_enhance: True
     conductivity: 0.9406637619554582
     window_size: 5
+    channels:
+    top_k: 6
     A: 0.8
     
-  batch_size: 1024
+  batch_size: 512
 
 loss: 
   name: focal

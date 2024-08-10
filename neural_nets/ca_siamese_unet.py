@@ -115,16 +115,49 @@ class Up1x3x1(nn.Module):
         return x
 
 
+class GaussianFourierFeatureTransform(nn.Module):
+    def __init__(self, input_dim, output_dim, initial_scale=10.0):
+        super(GaussianFourierFeatureTransform, self).__init__()
+        self.B = torch.randn(input_dim, output_dim)
+        self.scale = nn.Parameter(torch.tensor(initial_scale))
+        self.pi = 3.14159265359
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        x = rearrange(x, "B C H W -> B (H W) C")
+        x_proj = torch.matmul(x, self.B) * self.scale * 2 * self.pi
+        x_out = torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)
+        x_out = rearrange(x_out, "B (H W) C -> B C H W", H=H, W=W)
+        return x_out
+
+class NeuralFourierFeatureTransform(nn.Module):
+    def __init__(self, input_dim, output_dim, initial_scale=10.0):
+        super(NeuralFourierFeatureTransform, self).__init__()
+        self.B = nn.Parameter(torch.randn(input_dim, output_dim))
+        self.scale = nn.Parameter(torch.tensor(initial_scale)).to(torch.float)
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        x = rearrange(x, "B C H W -> B (H W) C")
+        x_proj = torch.matmul(x, self.B) * self.scale
+        x_out = torch.cat([torch.sin(x_proj), torch.cos(x_proj)], dim=-1)
+        x_out = rearrange(x_out, "B (H W) C -> B C H W", H=H, W=W)
+        return x_out
+
 class SiameseEncoder(nn.Module):
     def __init__(self, hsi_in, msi_in, latent_dim):
         super().__init__()
         # hsi_enc -> 31 x h x w -> 256  x 1 x 1
-        self.channel_selector = IWCA(hsi_in)
-        self.hsi_enc = Down1x3x1(hsi_in, latent_dim)
+        self.channel_selector = IWCA(hsi_in*2)
+        self.gff_hsi = NeuralFourierFeatureTransform(hsi_in, hsi_in)
+        self.gff_msi = NeuralFourierFeatureTransform(msi_in, msi_in)
+        self.hsi_enc = Down1x3x1(hsi_in*2, latent_dim)
         # msi_enc -> 3 x H x W -> -> 256  x 1 x 1
-        self.msi_enc = Down1x3x1(msi_in, latent_dim)
+        self.msi_enc = Down1x3x1(msi_in*2, latent_dim)
         
     def forward(self, hsi, msi):
+        hsi = self.gff_hsi(hsi)
+        msi = self.gff_msi(msi)
         hsi = self.channel_selector(hsi)
         z_hsi, hsi_out = self.hsi_enc(hsi)
         z_msi, msi_out = self.msi_enc(msi) # apply bilinear upsample here
