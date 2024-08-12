@@ -37,7 +37,7 @@ def main(hyperparam_config=None, seed=42):
     torch.cuda.set_device(config['device'])
     model_name = config['model']['name']
     dataset_name = config['dataset']['name']
-    save_path = f'models/trained_{model_name}_{dataset_name}_final_noisy.pth'
+    save_path = f'models/{model_name}_{dataset_name}.pth'
     train_dataset = dataset_factory[config['dataset']['name']](
                     **config['dataset']['kwargs'], mode="train", 
                     transforms=apply_augmentation)

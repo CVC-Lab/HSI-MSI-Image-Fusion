@@ -1,15 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import activation_layers
+from.utils import activation_layers
 from einops import rearrange
+import pdb
 
 
 class FourierPositionalEmbedding(nn.Module):
     def __init__(self, embedding_dim, a):
         super().__init__()
-        self.b = torch.rand(embedding_dim, 2)#\
-                    #.to(torch.double)#.to(torch.cuda)
+        self.b = torch.rand(embedding_dim, 2).cuda().to(torch.double)
         self.a = a
     
     def forward(self, x):
@@ -22,31 +22,33 @@ positional_embedding = {
     'fourier': FourierPositionalEmbedding
 }
 
-class CoordinateMLP(nn.Module):
-    def __init__(self, input_dim, embedding_dim, a,
-                 out_dim, act, pe):
+class PixelMLP(nn.Module):
+    def __init__(self, hsi_in, embedding_dim, a,
+                 output_channels, act, pe, **kwargs):
         super().__init__()
         self.pe = positional_embedding[pe](embedding_dim, a)
-        if act == 'fourier':
+        if pe == 'fourier':
             out_emb_dim = (embedding_dim*2)
         else: 
             out_emb_dim = embedding_dim
         self.net = nn.Sequential(*[
-            nn.Linear(input_dim+out_emb_dim, (input_dim+out_emb_dim)*2),
+            nn.Linear(hsi_in+out_emb_dim, (hsi_in+out_emb_dim)*2),
             activation_layers[act](),
-            nn.Linear((input_dim+out_emb_dim)*2, (input_dim+out_emb_dim)//2),
+            nn.Linear((hsi_in+out_emb_dim)*2, (hsi_in+out_emb_dim)//2),
             activation_layers[act](),
-            nn.Linear((input_dim+out_emb_dim)//2, (input_dim+out_emb_dim)//4),
+            nn.Linear((hsi_in+out_emb_dim)//2, (hsi_in+out_emb_dim)//4),
             activation_layers[act](),
-            nn.Linear((input_dim+out_emb_dim)//4, out_dim),
+            nn.Linear((hsi_in+out_emb_dim)//4, output_channels),
         ])
     
-    def forward(self, x):
-        pixel_values, position_values = x[:, :, :-2], x[:, :, -2:]
+    def forward(self, x, y=None):
+        pixel_values, position_values = x[:, :-2], x[:,  -2:]
         pos_emb = self.pe(position_values)
         x = torch.cat([pixel_values, pos_emb], dim=-1)
         x = self.net(x) # add softmax as part of loss func
-        return x
+        return {
+            'preds': x
+        }
     
 if __name__ == '__main__':
     
@@ -74,7 +76,7 @@ if __name__ == '__main__':
     # Result tensor will have shape (B, num_pixels, pixel_info)
     # Where pixel_info = 2 (for coordinates) + C (for pixel values)
     print(result.shape)  # Should be (2, 50*50, 2+3)
-    model = CoordinateMLP(input_dim=C, 
+    model = PixelMLP(input_dim=C, 
                           out_dim=6, 
                           embedding_dim=embedding_dim,
                           a=a, 

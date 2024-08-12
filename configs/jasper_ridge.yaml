@@ -5,15 +5,19 @@ device: 1
 num_epochs: 40
 
 model:
- name: 'cnn'
+ name: 'pixel_mlp'
  kwargs:
-  hsi_in: 6
+  hsi_in: 12
   msi_in: 3
   latent_dim: 256
   output_channels: 4
+  embedding_dim: 256
+  pe: 'fourier'
+  act: 'snake'
+  a: 1.0
 
 dataset:
-  name: jasper_ridge
+  name: jasper_ridge_pixel
   kwargs:
     classes: ["road", "soil", "water", "tree"]
     single_img_path: 'data/jasper/jasper_ridge_224.mat'
@@ -24,7 +28,8 @@ dataset:
     rgb_height: 16
     hsi_width: 8 
     hsi_height: 8
-    channels: [20, 60, 80, 100, 120, 140]
+    top_k: 12
+    channels:
     gamma: 0.4
     contrast_enhance: False
     conductivity: 0.6341031137853861

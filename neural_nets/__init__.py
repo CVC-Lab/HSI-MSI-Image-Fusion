@@ -3,13 +3,15 @@ from .ca_siamese_unet import CASiameseUNet
 from .unet import UNet
 from .sam_siamese_unet import SamSiameseUNet
 from .transformer_siamese import CASiameseTransformer
+from .pixel_mlp import PixelMLP
 
 model_factory = {
     'ca_siamese': CASiameseUNet,
     'unet': UNet,
     'sam_siamese': SamSiameseUNet,
     'cnn': CNN,
-    'siamese_transformer': CASiameseTransformer
+    'siamese_transformer': CASiameseTransformer,
+    'pixel_mlp': PixelMLP
     
 }
 model_args = {

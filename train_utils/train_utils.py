@@ -36,7 +36,8 @@ def main_training_loop(trainloader, net,
             # zero the parameter gradients
             optimizer.zero_grad()
             # forward + backward + optimize
-            outputs = net(hsi_batch.to(device), rgb_batch.to(device))
+            outputs = net(hsi_batch.to(torch.double).to(device), 
+                          rgb_batch.to(torch.double).to(device))
             loss = loss_fn(outputs, labels_batch.to(device))
             loss.backward()
             optimizer.step()
@@ -66,9 +67,17 @@ def test(testloader, net, save_path, num_classes, device=DEVICE):
     with torch.no_grad():
         for data in testloader:
             hsi_batch, rgb_batch, labels_batch = data
-            outputs = net(hsi_batch.to(device), rgb_batch.to(device))
+            outputs = net(hsi_batch.to(torch.double).to(device), 
+                          rgb_batch.to(torch.double).to(device))
             predictions.append(torch.argmax(outputs['preds'].cpu(), axis=1))
             truth_labels.append(torch.argmax(labels_batch, axis=1))
-    miou_score = miou(torch.cat(predictions, axis=0), torch.cat(truth_labels, axis=0)).numpy()
-    gdice_score = gdice(torch.cat(predictions, axis=0), torch.cat(truth_labels, axis=0)).numpy()
+    
+    preds = torch.cat(predictions, axis=0)
+    gt_lbls = torch.cat(truth_labels, axis=0)
+    if len(preds.shape) == 1:
+        H, W = testloader.dataset.img_hsi.shape[:-1]
+        preds = preds.reshape(H, W)
+        gt_lbls = gt_lbls.reshape(H, W)
+    miou_score = miou(preds, gt_lbls).numpy()
+    gdice_score = gdice(preds, gt_lbls).numpy()
     return miou_score, gdice_score
