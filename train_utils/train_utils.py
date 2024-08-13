@@ -76,8 +76,8 @@ def test(testloader, net, save_path, num_classes, device=DEVICE):
     gt_lbls = torch.cat(truth_labels, axis=0)
     if len(preds.shape) == 1:
         H, W = testloader.dataset.img_hsi.shape[:-1]
-        preds = preds.reshape(H, W)
-        gt_lbls = gt_lbls.reshape(H, W)
+        preds = preds.reshape(1, H, W)
+        gt_lbls = gt_lbls.reshape(1, H, W)
     miou_score = miou(preds, gt_lbls).numpy()
     gdice_score = gdice(preds, gt_lbls).numpy()
     return miou_score, gdice_score

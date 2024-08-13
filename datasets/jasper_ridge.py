@@ -35,6 +35,7 @@ class JasperRidgeDataset(BaseSegmentationDataset):
                  start_band, end_band, 
                  rgb_width, rgb_height,
                  hsi_width, hsi_height,
+                 top_k,
                  channels=None, 
                  mode="train", 
                  transforms=None, 
@@ -42,7 +43,15 @@ class JasperRidgeDataset(BaseSegmentationDataset):
                  window_size=5, conductivity=0.95,
                  gamma=0.4, contrast_enhance=True,
                  **kwargs):
-        self.channels = channels
+        
+        self.colors = ['purple', 'brown', 'blue', 'green']
+        self.label_names = ['Road', 'Soil', 'Water', 'Tree']
+        num_classes =len(self.label_names)
+        self.top_k = top_k
+        self.channels = get_top_channels(num_motion=num_classes, 
+                                    top_k=self.top_k,
+                                    dataset_name='jasper_ridge')
+        
         self.start_band = start_band
         self.end_band = end_band
         img_sri, gt = input_processing(single_img_path, single_gt_path)
@@ -58,7 +67,7 @@ class JasperRidgeDataset(BaseSegmentationDataset):
                          rgb_width=rgb_width,
                          rgb_height=rgb_height, hsi_width=hsi_width, 
                          hsi_height=hsi_height,
-                         channels=channels, 
+                         channels=self.channels, 
                          mode=mode, transforms=transforms, 
                          split_ratio=split_ratio, seed=seed, stride=1)
         
@@ -130,16 +139,11 @@ class MotionCodeJasperRidge(JasperRidgeDataset):
     
     def build_pixel_wise_dataset(self,):
         size_each_class = 50
-        colors = ['purple', 'brown', 'blue', 'green']
-        label_names = ['Road', 'Soil', 'Water', 'Tree']
-        num_classes = len(label_names)
+        num_classes = len(self.label_names)
         self.img_hsi = self.downsample(self.img_sri)
         img_rgb, gt = self.img_rgb, self.gt
         gt = self.downsample(gt)
-        channels = get_top_channels(num_motion=num_classes, 
-                                    top_k=self.top_k,
-                                    dataset_name='jasper_ridge')
-        img_hsi_reshaped = self.img_hsi[:, :, channels]#.reshape(-1, img_hsi.shape[-1])
+        img_hsi_reshaped = self.img_hsi[:, :, self.channels]
         img_hsi_reshaped = self.get_pixel_coords(img_hsi_reshaped)
         gt_reshaped = gt.reshape(-1, gt.shape[-1])      
         indices = None

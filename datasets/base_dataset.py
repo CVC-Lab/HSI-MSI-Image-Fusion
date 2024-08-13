@@ -55,12 +55,7 @@ class BaseSegmentationDataset(Dataset):
         self.channels = channels
         self.img_sri, self.img_rgb, self.gt = img_sri, img_rgb, gt
         self.num_classes = self.gt.shape[-1]
-        if not channels:
-            self.channels = get_top_channels(num_motion=self.num_classes, 
-                             num_channels=self.img_sri.shape[-1], top_k=top_k)
-            # self.img_sri = get_most_informative_img_sri(self.img_sri, self.gt, self.num_classes)
-        else:
-            self.img_sri = self.img_sri[:, :, self.channels]
+        self.img_sri = self.img_sri[:, :, self.channels]
         self.width, self.height = self.gt.shape[0], self.gt.shape[1]
         self.rgb_width, self.rgb_height = rgb_width, rgb_height
         self.hsi_width, self.hsi_height = hsi_width, hsi_height
@@ -79,7 +74,7 @@ class BaseSegmentationDataset(Dataset):
         if self.mode == 'train':
             self.indices = train_indices
         else:
-            self.indices = test_indices
+            self.indices = indices
         self.transforms = transforms
 
     def __len__(self):
