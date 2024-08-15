@@ -42,11 +42,14 @@ def main(hyperparam_config=None, seed=42):
                     **config['dataset']['kwargs'], mode="train", 
                     transforms=apply_augmentation)
     test_dataset = dataset_factory[config['dataset']['name']](
-                    **config['dataset']['kwargs'], mode="test", 
-                    transforms=apply_augmentation)
+                    **config['dataset']['kwargs'], mode="test_full", 
+                    transforms=apply_augmentation) # test on full image
     train_loader = DataLoader(train_dataset, 
                               batch_size=config['dataset']['batch_size'], 
                               shuffle=True)
+    print("train:", train_dataset)
+    print("test:", test_dataset)
+    pdb.set_trace()
     test_loader = DataLoader(test_dataset,
                              batch_size=config['dataset']['batch_size'], 
                              shuffle=True)

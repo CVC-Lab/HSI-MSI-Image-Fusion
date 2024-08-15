@@ -2,15 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
-from losses import CombinedLoss
+
+from train_utils.losses import loss_factory
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from einops import rearrange, pack
 from neural_nets import model_factory
 from datasets import dataset_factory
-from transforms import apply_augmentation
+from adversity.transforms import apply_augmentation
 import seaborn as sns
 import argparse
 import yaml
@@ -45,16 +45,18 @@ def visualize_all_channel_importance_bar_plot(model,
                                               config=None, 
                                              device=None):
     channels_imp_avg = torch.zeros(train_loader.dataset.img_sri.shape[-1])
-    channels_imp_avg = channels_imp_avg.to(device)
-    for i, data in tqdm(enumerate(trainloader, 0)):
-        hsi_batch, rgb_batch, labels_batch = data
-        _ = model.encoder.channel_selector(hsi_batch.to(device))
-        channel_wts = model.encoder.channel_selector.importance_wts
-        channels_imp_avg += channel_wts.squeeze().mean(0)
+    # channels_imp_avg = channels_imp_avg.to(device)
+    model.eval()
+    with torch.no_grad(): 
+        for i, data in tqdm(enumerate(trainloader, 0)):
+            hsi_batch, rgb_batch, labels_batch = data
+            _ = model.encoder.channel_selector(hsi_batch.to(torch.double).to(device))
+            channel_wts = model.encoder.channel_selector.importance_wts
+            channels_imp_avg += channel_wts.squeeze().mean(0).detach().cpu()
         
     channels_imp_avg /= len(trainloader)
     channels_imp_avg = F.softmax(channels_imp_avg, 0).detach().cpu().numpy()
-    
+    pdb.set_trace()
     # Print top 6 channel indexes
     top_channels = np.argsort(channels_imp_avg)[-6:][::-1]
     print("Top 6 channel indexes based on importance weights:", sorted(top_channels))
@@ -67,7 +69,7 @@ def visualize_all_channel_importance_bar_plot(model,
     plt.xlabel('Channel Index')
     plt.ylabel('Average Importance Weight')
     plt.title('Channel Importance Bar Plot')
-    plt.savefig(f"{config['model']['name']}_{config['dataset']['name']}_IWCA.png")
+    plt.savefig(f"images/{config['model']['name']}_{config['dataset']['name']}_IWCA.png")
     plt.show()
     
 

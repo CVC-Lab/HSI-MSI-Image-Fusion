@@ -5,7 +5,7 @@ device: 1
 num_epochs: 40
 
 model:
- name: 'ca_siamese'
+ name: 'pixel_mlp'
  kwargs:
   hsi_in: 12
   msi_in: 3
@@ -17,7 +17,7 @@ model:
   a: 1.0
 
 dataset:
-  name: jasper_ridge
+  name: jasper_ridge_pixel
   kwargs:
     classes: ["road", "soil", "water", "tree"]
     single_img_path: 'data/jasper/jasper_ridge_224.mat'

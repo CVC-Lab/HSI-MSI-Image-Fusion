@@ -96,12 +96,13 @@ class MotionCodeJasperRidge(JasperRidgeDataset):
                  gamma=0.4, contrast_enhance=True,
                  **kwargs):
         ## TODO: call init of JasperRidgeDataset
+        self.top_k = top_k
         super().__init__(single_img_path, 
                          single_gt_path, 
                          start_band, 
                          end_band, 
                          rgb_width, 
-                         rgb_height, hsi_width, hsi_height, 
+                         rgb_height, hsi_width, hsi_height, top_k,
                          channels, mode, transforms, 
                          split_ratio, seed, window_size, 
                          conductivity, 
@@ -110,7 +111,7 @@ class MotionCodeJasperRidge(JasperRidgeDataset):
         self.Y_train, self.Y_all = None, None
         self.labels_train, self.labels_all = None, None
         self.img_hsi = None
-        self.top_k = top_k
+        
         self.build_pixel_wise_dataset()
         if mode == 'train':
             self.Y, self.labels = self.Y_train, self.labels_train
@@ -143,8 +144,7 @@ class MotionCodeJasperRidge(JasperRidgeDataset):
         self.img_hsi = self.downsample(self.img_sri)
         img_rgb, gt = self.img_rgb, self.gt
         gt = self.downsample(gt)
-        img_hsi_reshaped = self.img_hsi[:, :, self.channels]
-        img_hsi_reshaped = self.get_pixel_coords(img_hsi_reshaped)
+        img_hsi_reshaped = self.get_pixel_coords(self.img_hsi)
         gt_reshaped = gt.reshape(-1, gt.shape[-1])      
         indices = None
         all_labels = np.argmax(gt_reshaped, axis=1)
@@ -167,5 +167,11 @@ class MotionCodeJasperRidge(JasperRidgeDataset):
         
     def __getitem__(self, idx):
         return self.Y[idx], self.Y[idx], self.labels[idx]
+    
+    def __repr__(self):
+        total_pixels = self.labels_all.shape[0]
+        data_percentage = (self.Y.shape[0]/ total_pixels) * 100
+        return f"dataset contains {data_percentage}% overall data"
+        
         
         

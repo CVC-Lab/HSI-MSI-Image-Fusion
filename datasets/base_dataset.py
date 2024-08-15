@@ -57,9 +57,16 @@ class BaseSegmentationDataset(Dataset):
         self.num_classes = self.gt.shape[-1]
         self.img_sri = self.img_sri[:, :, self.channels]
         self.width, self.height = self.gt.shape[0], self.gt.shape[1]
+        
         self.rgb_width, self.rgb_height = rgb_width, rgb_height
         self.hsi_width, self.hsi_height = hsi_width, hsi_height
         self.factor = self.rgb_width // self.hsi_width
+        if mode == 'test_full':    
+            # test on full image at once
+            self.rgb_width, self.rgb_height = self.width, self.height
+            self.hsi_width, self.hsi_height = self.width, self.height
+            
+        
         self.sizeI = self.rgb_width
         self.sigma = 2
         # Max indices along width/height dimension for subimage extraction.
@@ -67,15 +74,31 @@ class BaseSegmentationDataset(Dataset):
         self.max_height_index = self.height - self.rgb_height + 1
         
         indices = list(range(0, self.max_width_index * self.max_height_index, stride))
-        train_indices, test_indices = train_test_split(
-            indices, test_size=(1 - split_ratio), random_state=seed
-        )
+        if mode != 'test_full':
+            train_indices, test_indices = train_test_split(
+                indices, test_size=(1 - split_ratio), random_state=seed
+            )
         self.mode = mode
         if self.mode == 'train':
             self.indices = train_indices
+        elif self.mode == 'test':
+            self.indices = test_indices
         else:
-            self.indices = indices
+            self.indices = indices # test full image
+            
         self.transforms = transforms
+        
+    def __repr__(self,):
+        img_ar = np.zeros((self.img_rgb.shape[0], self.img_rgb.shape[1]))
+        total_pixels = self.width * self.height
+        for idx in self.indices:
+            width_index = idx // self.max_height_index
+            height_index = idx % self.max_height_index
+            img_ar[width_index:(width_index + self.rgb_width), 
+                               height_index:(height_index + self.rgb_height)] = 1.0
+        
+        data_percentage = (img_ar.sum() / total_pixels) * 100
+        return f"dataset contains {data_percentage}% overall data"
 
     def __len__(self):
         return len(self.indices)

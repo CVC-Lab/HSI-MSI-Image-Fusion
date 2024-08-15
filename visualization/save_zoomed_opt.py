@@ -14,8 +14,8 @@ from PIL import Image
 import pdb
 from torchmetrics.segmentation import MeanIoU, GeneralizedDiceScore
 import matplotlib.pyplot as plt
-from ..scripts.losses import calculate_psnr
-from .train_utils import parse_args
+from train_utils.losses import calculate_psnr
+from train_utils.train_utils import parse_args
 
 
 # Define the color mapping for each class
