@@ -73,13 +73,13 @@ class AddSingleScattering(iaa.meta.Augmenter):
 
 
 
-def apply_augmentation(hsi, gt, get_rgb, downsample, A=0.8):
+def apply_augmentation(hsi, gt, get_rgb, downsample, channels, A=0.8):
     augmentation_pipeline = iaa.Sequential([
         AddSingleScattering(beta=0.1, A=A, depth_method='random')
-    ])
+    ], seed=42, random_order=False)
     hsi_aug = augmentation_pipeline(image=hsi)
     msi_aug = get_rgb(hsi_aug)
-    hsi_aug = downsample(hsi_aug)
+    hsi_aug = downsample(hsi_aug[:, :, channels])
     hsi_aug = rearrange(hsi_aug, "H W C -> C H W")
     msi_aug = rearrange(msi_aug, "H W C -> C H W")
     gt = rearrange(gt, "H W C -> C H W")

@@ -7,13 +7,14 @@ num_epochs: 40
 model:
  name: 'ca_siamese'
  kwargs:
-  hsi_in: 162  
+  hsi_in: 12  
   msi_in: 3
   latent_dim: 256
   output_channels: 6
-  embedding:
-    name: "fourier"
-    scale: 2.0
+  embedding_dim: 256
+  pe: 'fourier'
+  act: 'snake'
+  a: 1.0
 
 dataset:
   name: urban
@@ -30,6 +31,8 @@ dataset:
     channels:
     top_k: 6
     A: 0.8
+    top_k: 12
+    
     
   batch_size: 512
 

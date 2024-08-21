@@ -49,7 +49,6 @@ def main(hyperparam_config=None, seed=42):
                               shuffle=True)
     print("train:", train_dataset)
     print("test:", test_dataset)
-    pdb.set_trace()
     test_loader = DataLoader(test_dataset,
                              batch_size=config['dataset']['batch_size'], 
                              shuffle=True)

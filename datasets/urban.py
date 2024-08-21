@@ -8,6 +8,7 @@ from einops import rearrange
 import torch
 from .base_dataset import BaseSegmentationDataset, adjust_gamma_hyperspectral
 from .contrast_enhancement import contrast_enhancement
+from train_utils.motioncode_selection import get_top_channels
 from pathlib import Path
 
 """
@@ -74,7 +75,8 @@ class UrbanDataset(BaseSegmentationDataset):
     ''' Simple dataset from subimage of a single HSI image'''
     def __init__(self, data_dir, 
                  rgb_width, rgb_height,
-                 hsi_width, hsi_height, 
+                 hsi_width, hsi_height,
+                 top_k, 
                  mode="train", transforms=None, split_ratio=0.8, seed=42,
                  channels=None,
                  window_size=5, conductivity=0.95, 
@@ -83,20 +85,34 @@ class UrbanDataset(BaseSegmentationDataset):
         data_dir = Path(data_dir)
         single_img_path = data_dir / "Urban_R162.mat"
         single_gt_path = data_dir / "groundTruth_Urban_end6/end6_groundTruth.mat"
+        self.colors = ['red', 'green', 'purple', 'orange', 'gray', 'brown']
+        self.label_names = ['Asphalt', 'Grass', 'Tree', 'Roof', 'Metal','Dirt']
+        self.top_k = top_k
+        num_classes =len(self.label_names)
         img_sri, gt = input_processing(single_img_path, single_gt_path)
+        if channels != 'all':
+            self.channels = get_top_channels(num_motion=num_classes,
+                                             num_channels=img_sri.shape[-1], 
+                                        top_k=self.top_k,
+                                        dataset_name='urban')
+        else:
+            self.channels = list(range(0, img_sri.shape[-1]))
+        
         img_sri = adjust_gamma_hyperspectral(img_sri, gamma=gamma)
         if contrast_enhance:
             img_sri = contrast_enhancement((img_sri*255).astype(np.uint8), 
                                                 window_size=window_size, 
                                                 conductivity=conductivity)/255
         img_rgb = self.get_rgb(img_sri)
+        
+        
         super().__init__(img_sri=img_sri, 
                          img_rgb=img_rgb,
                          gt=gt,
                          rgb_width=rgb_width,
                          rgb_height=rgb_height, hsi_width=hsi_width, 
                          hsi_height=hsi_height,
-                         channels=channels, 
+                         channels=self.channels, 
                          mode=mode, transforms=transforms, 
                          split_ratio=split_ratio, seed=seed, stride=8)
     
@@ -109,6 +125,55 @@ class UrbanDataset(BaseSegmentationDataset):
         # Stack bands to create the RGB image
         RGB_image = np.stack((R_band, G_band, B_band), axis=-1)
         return RGB_image
+
+
+class MotionCodeUrban(UrbanDataset):
+    
+    def __init__(self, data_dir,
+                 rgb_width, rgb_height,
+                 hsi_width, hsi_height,
+                 top_k=24, 
+                 channels=None, 
+                 mode="train", 
+                 transforms=None, 
+                 split_ratio=0.8, seed=42, 
+                 window_size=5, conductivity=0.95,
+                 gamma=0.4, contrast_enhance=True,
+                 **kwargs):
+        ## TODO: call init of JasperRidgeDataset
+        self.top_k = top_k
+        super().__init__(data_dir=data_dir, 
+                         rgb_width=rgb_width, 
+                         rgb_height=rgb_height, 
+                         hsi_width=hsi_width, 
+                         hsi_height=hsi_height, top_k=top_k,
+                         channels=channels, mode=mode, 
+                         transforms=transforms, 
+                         split_ratio=split_ratio, seed=seed, 
+                         window_size=window_size, 
+                         conductivity=conductivity, 
+                         gamma=gamma, 
+                         contrast_enhance=contrast_enhance)
+        self.Y_train, self.Y_all = None, None
+        self.labels_train, self.labels_all = None, None
+        self.img_hsi = None
+        self.build_pixel_wise_dataset(size_each_class=1000)
+        if mode == 'train':
+            self.Y, self.labels = self.Y_train, self.labels_train
+        else:
+            self.Y, self.labels = self.Y_all, self.labels_all
+        
+        
+    def __len__(self,):
+        return self.Y.shape[0]
+        
+    def __getitem__(self, idx):
+        return self.Y[idx], self.Y[idx], self.labels[idx]
+    
+    def __repr__(self):
+        total_pixels = self.labels_all.shape[0]
+        data_percentage = (self.Y.shape[0]/ total_pixels) * 100
+        return f"dataset contains {data_percentage}% overall data"
 
 
 if __name__ == '__main__':

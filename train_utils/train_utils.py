@@ -29,7 +29,7 @@ def main_training_loop(trainloader, net,
     lowest_loss = torch.inf
     ds_len = len(trainloader)
     for epoch in range(num_epochs):  # loop over the dataset multiple times
-        print(f'Epoch: {epoch+1}', end=' ')
+        print(f'Epoch: {epoch+1}')
         running_loss = 0.0
         for i, data in tqdm(enumerate(trainloader, 0)):
             hsi_batch, rgb_batch, labels_batch = data

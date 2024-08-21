@@ -55,7 +55,6 @@ class BaseSegmentationDataset(Dataset):
         self.channels = channels
         self.img_sri, self.img_rgb, self.gt = img_sri, img_rgb, gt
         self.num_classes = self.gt.shape[-1]
-        self.img_sri = self.img_sri[:, :, self.channels]
         self.width, self.height = self.gt.shape[0], self.gt.shape[1]
         
         self.rgb_width, self.rgb_height = rgb_width, rgb_height
@@ -66,7 +65,7 @@ class BaseSegmentationDataset(Dataset):
             self.rgb_width, self.rgb_height = self.width, self.height
             self.hsi_width, self.hsi_height = self.width, self.height
             
-        
+        self.top_k = top_k
         self.sizeI = self.rgb_width
         self.sigma = 2
         # Max indices along width/height dimension for subimage extraction.
@@ -157,7 +156,9 @@ class BaseSegmentationDataset(Dataset):
         if self.transforms:
             sub_hsi, sub_rgb, sub_gt = self.transforms(sub_sri, sub_gt,
                                                        self.get_rgb, 
-                                                       self.downsample, self.A)
+                                                       self.downsample, 
+                                                       A=self.A, 
+                                                       channels=self.channels)
         else:
             sub_hsi = self.downsample(sub_sri)
             sub_hsi = np.moveaxis(sub_hsi, 2, 0)
@@ -168,3 +169,47 @@ class BaseSegmentationDataset(Dataset):
     
     def get_rgb(self, img_sri):
         raise NotImplementedError("write logic for extracting RGB from SRI")
+    
+    
+    def get_pixel_coords(self, x):
+        H, W, C = x.shape
+        # Step 1: Generate the pixel coordinates
+        # Generate a grid of coordinates
+        y_coords, x_coords = torch.meshgrid(torch.arange(H), 
+                                        torch.arange(W), indexing='ij')
+        # Step 2: Flatten the spatial dimensions
+        # Reshape x to have shape (C, H * W)
+        x_flattened = x.reshape(-1, C)  # Flatten H and W
+        x_coords_flattened = x_coords.flatten() # Flatten coordinates
+        y_coords_flattened = y_coords.flatten()
+        # Step 3: Concatenate coordinates and values
+        # Stack coordinates to form (2, H * W)
+        pixel_coordinates = torch.stack([x_coords_flattened, y_coords_flattened], dim=1)
+        # Stack the coordinates and pixel values along the third dimension
+        # Resulting shape: (H * W, 2 + C)
+        result = torch.cat([pixel_coordinates, torch.from_numpy(x_flattened)], dim=1)
+        return result
+        
+    
+    def build_pixel_wise_dataset(self, size_each_class=50):
+        num_classes = len(self.label_names)
+        self.img_hsi = self.downsample(self.img_sri[:, :, self.channels])
+        img_rgb, gt = self.img_rgb, self.gt
+        gt = self.downsample(gt)
+        img_hsi_reshaped = self.get_pixel_coords(self.img_hsi)
+        gt_reshaped = gt.reshape(-1, gt.shape[-1])      
+        indices = None
+        all_labels = np.argmax(gt_reshaped, axis=1)
+        for c in range(num_classes):
+            indices_in_class = np.where(all_labels == c)[0]
+            current_choices = np.random.choice(indices_in_class, size=size_each_class)
+            if indices is None:
+                indices = current_choices
+            else:
+                indices = np.append(indices, current_choices)
+        num_series = indices.shape[0]
+        all_num_series = img_hsi_reshaped.shape[0]
+        self.Y_train = img_hsi_reshaped[indices, :].reshape(num_series, -1)
+        self.Y_all = img_hsi_reshaped.reshape(all_num_series, -1)
+        self.labels_all = gt_reshaped
+        self.labels_train = gt_reshaped[indices, :]
