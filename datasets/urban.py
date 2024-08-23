@@ -157,7 +157,7 @@ class MotionCodeUrban(UrbanDataset):
         self.Y_train, self.Y_all = None, None
         self.labels_train, self.labels_all = None, None
         self.img_hsi = None
-        self.build_pixel_wise_dataset(size_each_class=1000)
+        self.build_pixel_wise_dataset()
         if mode == 'train':
             self.Y, self.labels = self.Y_train, self.labels_train
         else:

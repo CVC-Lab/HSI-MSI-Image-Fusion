@@ -201,7 +201,7 @@ class BaseSegmentationDataset(Dataset):
         pc_rgb, pc_hsi = self.get_pixel_coords(self.img_rgb, self.img_hsi)
         super_pixels = torch.from_numpy(self.img_hsi[pc_hsi[:, 0],pc_hsi[:, 1], :])
         pixels = torch.from_numpy(img_rgb.reshape(-1, img_rgb.shape[-1]))
-        series = torch.cat([pc_rgb, pixels, super_pixels], dim=1) 
+        series = torch.cat([pixels, super_pixels, pc_rgb], dim=1) 
         # now we select 
         gt_reshaped = gt.reshape(-1, gt.shape[-1])      
         indices = None
