@@ -56,7 +56,7 @@ class BaseSegmentationDataset(Dataset):
         self.img_sri, self.img_rgb, self.gt = img_sri, img_rgb, gt
         self.num_classes = self.gt.shape[-1]
         self.width, self.height = self.gt.shape[0], self.gt.shape[1]
-        
+        self.split_ratio = split_ratio
         self.rgb_width, self.rgb_height = rgb_width, rgb_height
         self.hsi_width, self.hsi_height = hsi_width, hsi_height
         self.factor = self.rgb_width // self.hsi_width
@@ -171,45 +171,56 @@ class BaseSegmentationDataset(Dataset):
         raise NotImplementedError("write logic for extracting RGB from SRI")
     
     
-    def get_pixel_coords(self, x):
+    def get_pixel_coords(self, x, y):
         H, W, C = x.shape
+        h, w, c = y.shape
+        factor = H / h
         # Step 1: Generate the pixel coordinates
         # Generate a grid of coordinates
         y_coords, x_coords = torch.meshgrid(torch.arange(H), 
                                         torch.arange(W), indexing='ij')
         # Step 2: Flatten the spatial dimensions
         # Reshape x to have shape (C, H * W)
-        x_flattened = x.reshape(-1, C)  # Flatten H and W
+        #x_flattened = x.reshape(-1, C)  # Flatten H and W
         x_coords_flattened = x_coords.flatten() # Flatten coordinates
         y_coords_flattened = y_coords.flatten()
         # Step 3: Concatenate coordinates and values
         # Stack coordinates to form (2, H * W)
-        pixel_coordinates = torch.stack([x_coords_flattened, y_coords_flattened], dim=1)
+        pixel_coordinates_x = torch.stack([x_coords_flattened, y_coords_flattened], dim=1)
+        pixel_coordinates_y = (pixel_coordinates_x // factor).to(torch.int)
         # Stack the coordinates and pixel values along the third dimension
         # Resulting shape: (H * W, 2 + C)
-        result = torch.cat([pixel_coordinates, torch.from_numpy(x_flattened)], dim=1)
-        return result
+        # result = torch.cat([pixel_coordinates, torch.from_numpy(x_flattened)], dim=1)
+        return pixel_coordinates_x, pixel_coordinates_y
         
     
-    def build_pixel_wise_dataset(self, size_each_class=50):
+    def build_pixel_wise_dataset(self):
         num_classes = len(self.label_names)
         self.img_hsi = self.downsample(self.img_sri[:, :, self.channels])
         img_rgb, gt = self.img_rgb, self.gt
-        gt = self.downsample(gt)
-        img_hsi_reshaped = self.get_pixel_coords(self.img_hsi)
+        pc_rgb, pc_hsi = self.get_pixel_coords(self.img_rgb, self.img_hsi)
+        super_pixels = torch.from_numpy(self.img_hsi[pc_hsi[:, 0],pc_hsi[:, 1], :])
+        pixels = torch.from_numpy(img_rgb.reshape(-1, img_rgb.shape[-1]))
+        series = torch.cat([pc_rgb, pixels, super_pixels], dim=1) 
+        # now we select 
         gt_reshaped = gt.reshape(-1, gt.shape[-1])      
         indices = None
         all_labels = np.argmax(gt_reshaped, axis=1)
+        total_size = gt_reshaped.shape[0]
+        train_data_percent = self.split_ratio
+        train_data_size = int(total_size * train_data_percent)
+        size_each_class = train_data_size // num_classes
         for c in range(num_classes):
             indices_in_class = np.where(all_labels == c)[0]
-            current_choices = np.random.choice(indices_in_class, size=size_each_class)
+            c_size = min(len(indices_in_class), size_each_class)
+            current_choices = np.random.choice(indices_in_class, size=c_size)
             if indices is None:
                 indices = current_choices
             else:
                 indices = np.append(indices, current_choices)
         num_series = indices.shape[0]
-        all_num_series = img_hsi_reshaped.shape[0]
-        self.Y_train = img_hsi_reshaped[indices, :].reshape(num_series, -1)
-        self.Y_all = img_hsi_reshaped.reshape(all_num_series, -1)
+        all_num_series = series.shape[0]
+        self.Y_train = series[indices, :].reshape(num_series, -1)
+        self.Y_all = series.reshape(all_num_series, -1)
         self.labels_all = gt_reshaped
         self.labels_train = gt_reshaped[indices, :]

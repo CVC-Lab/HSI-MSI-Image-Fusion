@@ -145,19 +145,24 @@ class NeuralFourierFeatureTransform(nn.Module):
         return x_out
 
 class SiameseEncoder(nn.Module):
-    def __init__(self, hsi_in, msi_in, latent_dim):
+    def __init__(self, hsi_in, msi_in, latent_dim, use_nfft=True):
         super().__init__()
         # hsi_enc -> 31 x h x w -> 256  x 1 x 1
-        self.channel_selector = IWCA(hsi_in*2)
-        self.gff_hsi = NeuralFourierFeatureTransform(hsi_in, hsi_in)
-        self.gff_msi = NeuralFourierFeatureTransform(msi_in, msi_in)
-        self.hsi_enc = Down1x3x1(hsi_in*2, latent_dim)
+        self.use_nfft = use_nfft
+        if self.use_nfft:
+            self.gff_hsi = NeuralFourierFeatureTransform(hsi_in, hsi_in)
+            self.gff_msi = NeuralFourierFeatureTransform(msi_in, msi_in)
+            hsi_in = 2 * hsi_in
+            msi_in = 2 * msi_in
+        self.channel_selector = IWCA(hsi_in)
+        self.hsi_enc = Down1x3x1(hsi_in, latent_dim)
         # msi_enc -> 3 x H x W -> -> 256  x 1 x 1
-        self.msi_enc = Down1x3x1(msi_in*2, latent_dim)
+        self.msi_enc = Down1x3x1(msi_in, latent_dim)
         
     def forward(self, hsi, msi):
-        hsi = self.gff_hsi(hsi)
-        msi = self.gff_msi(msi)
+        if self.use_nfft:
+            hsi = self.gff_hsi(hsi)
+            msi = self.gff_msi(msi)
         hsi = self.channel_selector(hsi)
         z_hsi, hsi_out = self.hsi_enc(hsi)
         z_msi, msi_out = self.msi_enc(msi) # apply bilinear upsample here

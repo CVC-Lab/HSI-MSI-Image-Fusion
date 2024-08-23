@@ -5,9 +5,9 @@ device: 0
 num_epochs: 40
 
 model:
- name: 'ca_siamese'
+ name: 'pixel_mlp'
  kwargs:
-  hsi_in: 12  
+  hsi_in: 24 
   msi_in: 3
   latent_dim: 256
   output_channels: 6
@@ -17,7 +17,7 @@ model:
   a: 1.0
 
 dataset:
-  name: urban
+  name: urban_pixel
   kwargs:
     data_dir: '/mnt/data/shubham/hsi_msi/urban'
     rgb_width: 64
@@ -29,9 +29,8 @@ dataset:
     conductivity: 0.9406637619554582
     window_size: 5
     channels:
-    top_k: 6
+    top_k: 24
     A: 0.8
-    top_k: 12
     
     
   batch_size: 512

@@ -23,7 +23,7 @@ positional_embedding = {
 }
 
 class PixelMLP(nn.Module):
-    def __init__(self, hsi_in, embedding_dim, a,
+    def __init__(self, hsi_in, msi_in, embedding_dim, a,
                  output_channels, act, pe, **kwargs):
         super().__init__()
         self.pe = positional_embedding[pe](embedding_dim, a)
@@ -31,14 +31,18 @@ class PixelMLP(nn.Module):
             out_emb_dim = (embedding_dim*2)
         else: 
             out_emb_dim = embedding_dim
+        
+        total_in = hsi_in + msi_in + out_emb_dim
         self.net = nn.Sequential(*[
-            nn.Linear(hsi_in+out_emb_dim, (hsi_in+out_emb_dim)*2),
+            nn.Linear(total_in, total_in),
             activation_layers[act](),
-            nn.Linear((hsi_in+out_emb_dim)*2, (hsi_in+out_emb_dim)//2),
+            nn.Linear(total_in, (total_in)//4),
             activation_layers[act](),
-            nn.Linear((hsi_in+out_emb_dim)//2, (hsi_in+out_emb_dim)//4),
+            nn.Linear((total_in)//4, (total_in)//8),
             activation_layers[act](),
-            nn.Linear((hsi_in+out_emb_dim)//4, output_channels),
+            nn.Linear((total_in)//8, (total_in)//8),
+            activation_layers[act](),
+            nn.Linear((total_in)//8, output_channels),
         ])
     
     def forward(self, x, y=None):
