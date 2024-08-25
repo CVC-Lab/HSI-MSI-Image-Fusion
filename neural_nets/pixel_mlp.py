@@ -6,10 +6,34 @@ from einops import rearrange
 import pdb
 
 
-class FourierPositionalEmbedding(nn.Module):
-    def __init__(self, embedding_dim, a):
+def positional_embedding(positions, d=256):
+    """
+    Generates positional embeddings for the input positions.
+
+    Args:
+        positions (torch.Tensor): Tensor of shape [N, 2] containing the (x, y) coordinates.
+        d (int): Dimensionality of the embedding (must be even). Default is 4.
+
+    Returns:
+        torch.Tensor: Tensor of shape [N, d] containing the positional embeddings.
+    """
+    assert d % 2 == 0, "Embedding dimension d must be even."
+
+    N = positions.shape[0]
+    embeddings = torch.zeros((N, d), dtype=torch.float32).to(positions.device)
+    div_term = torch.pow(10000, torch.arange(0, d, 2).float() / d).to(positions.device)
+
+    embeddings[:, 0::2] = torch.sin(positions[:, 0].unsqueeze(1) / div_term)  # Sinusoidal embedding for x
+    embeddings[:, 1::2] = torch.cos(positions[:, 0].unsqueeze(1) / div_term)  # Cosine embedding for x
+    embeddings[:, 0::2] += torch.sin(positions[:, 1].unsqueeze(1) / div_term)  # Sinusoidal embedding for y
+    embeddings[:, 1::2] += torch.cos(positions[:, 1].unsqueeze(1) / div_term)  # Cosine embedding for y
+
+    return embeddings
+
+class FourierFeatureEmbedding(nn.Module):
+    def __init__(self, embedding_dim, input_dim, a):
         super().__init__()
-        self.b = torch.rand(embedding_dim, 2).cuda().to(torch.double)
+        self.b = torch.rand(embedding_dim, input_dim).cuda().to(torch.double)
         self.a = a
     
     def forward(self, x):
@@ -18,21 +42,31 @@ class FourierPositionalEmbedding(nn.Module):
             self.a*torch.cos(2*torch.pi*x) @ self.b.T], axis=-1)
 
 
-positional_embedding = {
-    'fourier': FourierPositionalEmbedding
+feature_embedding = {
+    'fourier': FourierFeatureEmbedding
 }
 
 class PixelMLP(nn.Module):
-    def __init__(self, hsi_in, msi_in, embedding_dim, a,
-                 output_channels, act, pe, **kwargs):
+    def __init__(self, hsi_in, msi_in, 
+                 feature_embedding_dim, position_embedding_dim, a,
+                 output_channels, act, fe_alg, input_mode, **kwargs):
         super().__init__()
-        self.pe = positional_embedding[pe](embedding_dim, a)
-        if pe == 'fourier':
-            out_emb_dim = (embedding_dim*2)
-        else: 
-            out_emb_dim = embedding_dim
-        
-        total_in = hsi_in + msi_in + out_emb_dim
+        self.position_embedding_dim = position_embedding_dim
+        if input_mode == 'hsi_only':
+            fdim = hsi_in
+        elif input_mode == 'msi_only':
+            fdim = msi_in
+        else:
+            fdim = hsi_in + msi_in
+        self.fe_alg = fe_alg
+        if fe_alg == 'fourier':   
+            self.fe = feature_embedding[fe_alg](feature_embedding_dim, 
+                                            fdim, a)  
+            fdim = feature_embedding_dim*2 
+        self.hsi_in = hsi_in
+        self.msi_in = msi_in
+        self.input_mode = input_mode
+        total_in = fdim + position_embedding_dim
         self.net = nn.Sequential(*[
             nn.Linear(total_in, total_in),
             activation_layers[act](),
@@ -46,9 +80,21 @@ class PixelMLP(nn.Module):
         ])
     
     def forward(self, x, y=None):
-        pixel_values, position_values = x[:, :-2], x[:,  -2:]
-        pos_emb = self.pe(position_values)
-        x = torch.cat([pixel_values, pos_emb], dim=-1)
+        position_values = x[:,  -2:]
+        pos_emb = positional_embedding(position_values, 
+                                       d=self.position_embedding_dim)
+        # x - [rgb_pixel, hsi_super_pixel, position_values]
+        if self.input_mode == 'hsi_only':
+            pixel_values = x[:, 3:-2]
+        elif self.input_mode == 'msi_only':
+            pixel_values = x[:, :3]
+        else:
+            pixel_values = x[:, :-2]
+        if self.fe_alg == 'fourier':
+            feat_emb = self.fe(pixel_values)
+        else:
+            feat_emb = pixel_values
+        x = torch.cat([feat_emb, pos_emb], dim=-1)
         x = self.net(x) # add softmax as part of loss func
         return {
             'preds': x
