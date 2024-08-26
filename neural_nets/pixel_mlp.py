@@ -4,31 +4,7 @@ import torch.nn.functional as F
 from.utils import activation_layers
 from einops import rearrange
 import pdb
-
-
-def positional_embedding(positions, d=256):
-    """
-    Generates positional embeddings for the input positions.
-
-    Args:
-        positions (torch.Tensor): Tensor of shape [N, 2] containing the (x, y) coordinates.
-        d (int): Dimensionality of the embedding (must be even). Default is 4.
-
-    Returns:
-        torch.Tensor: Tensor of shape [N, d] containing the positional embeddings.
-    """
-    assert d % 2 == 0, "Embedding dimension d must be even."
-
-    N = positions.shape[0]
-    embeddings = torch.zeros((N, d), dtype=torch.float32).to(positions.device)
-    div_term = torch.pow(10000, torch.arange(0, d, 2).float() / d).to(positions.device)
-
-    embeddings[:, 0::2] = torch.sin(positions[:, 0].unsqueeze(1) / div_term)  # Sinusoidal embedding for x
-    embeddings[:, 1::2] = torch.cos(positions[:, 0].unsqueeze(1) / div_term)  # Cosine embedding for x
-    embeddings[:, 0::2] += torch.sin(positions[:, 1].unsqueeze(1) / div_term)  # Sinusoidal embedding for y
-    embeddings[:, 1::2] += torch.cos(positions[:, 1].unsqueeze(1) / div_term)  # Cosine embedding for y
-
-    return embeddings
+from .position_embeddings import PositionalEmbeddingFactory
 
 class FourierFeatureEmbedding(nn.Module):
     def __init__(self, embedding_dim, input_dim, a):
@@ -49,9 +25,12 @@ feature_embedding = {
 class PixelMLP(nn.Module):
     def __init__(self, hsi_in, msi_in, 
                  feature_embedding_dim, position_embedding_dim, a,
-                 output_channels, act, fe_alg, input_mode, **kwargs):
+                 output_channels, act, fe_alg, pe_alg, input_mode, **kwargs):
         super().__init__()
         self.position_embedding_dim = position_embedding_dim
+        self.pe = PositionalEmbeddingFactory.get_embedding(pe_alg, 
+                                                           2048, # not relevant rn
+                                                           position_embedding_dim)
         if input_mode == 'hsi_only':
             fdim = hsi_in
         elif input_mode == 'msi_only':
@@ -70,19 +49,20 @@ class PixelMLP(nn.Module):
         self.net = nn.Sequential(*[
             nn.Linear(total_in, total_in),
             activation_layers[act](),
-            nn.Linear(total_in, (total_in)//4),
+            nn.Linear(total_in, (total_in)//2),
+            activation_layers[act](),
+            nn.Linear((total_in)//2, (total_in)//4),
+            activation_layers[act](),
+            nn.Linear((total_in)//4, (total_in)//4),
             activation_layers[act](),
             nn.Linear((total_in)//4, (total_in)//8),
-            activation_layers[act](),
-            nn.Linear((total_in)//8, (total_in)//8),
             activation_layers[act](),
             nn.Linear((total_in)//8, output_channels),
         ])
     
     def forward(self, x, y=None):
         position_values = x[:,  -2:]
-        pos_emb = positional_embedding(position_values, 
-                                       d=self.position_embedding_dim)
+        pos_emb = self.pe(position_values)
         # x - [rgb_pixel, hsi_super_pixel, position_values]
         if self.input_mode == 'hsi_only':
             pixel_values = x[:, 3:-2]

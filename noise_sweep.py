@@ -8,9 +8,9 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from neural_nets import model_factory
 from datasets import dataset_factory
-from .train_utils.train_utils import main_training_loop, test, parse_args
-from .transforms import apply_augmentation
-from .train_utils.config_generator import ConfigGenerator
+from train_utils.train_utils import main_training_loop, test, parse_args
+from adversity.transforms import apply_augmentation
+from train_utils.config_generator import ConfigGenerator
 from torch.utils.tensorboard import SummaryWriter
 import pandas as pd
 import pdb
@@ -26,13 +26,18 @@ torch.cuda.manual_seed(42)
 torch.cuda.manual_seed_all(42)
 
 
-def run_experiment(config, experiment_config):
+def run_experiment(experiment_config):
+    dataset_name = experiment_config['dataset']['name']
+    with open(f'configs/{dataset_name}.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    model_name = experiment_config['model']['name']
+    if model_name == 'pixel_mlp':
+        dataset_name += "_pixel"
     # Update the config with the current experiment configuration
     config['model']['kwargs'].update(experiment_config['model']['kwargs'])
-    config['model']['name'] = experiment_config['model']['name']
-    config['dataset']['name'] = experiment_config['dataset']['name']
+    config['model']['name'] = model_name
+    config['dataset']['name'] =  dataset_name
     config['dataset']['kwargs'].update(experiment_config['dataset']['kwargs'])
-
     # Run the experiment
     net, mIOU, gdice = main(config)
     result = {}
@@ -51,7 +56,7 @@ def main(config, seed=42):
     dataset_name = config['dataset']['name']
     A = config["dataset"]["kwargs"]["A"]
     gamma = config["dataset"]["kwargs"]["gamma"]
-    save_path = f'models/sweep_models/trained_{model_name}_{dataset_name}_{A}_{gamma}.pth'
+    save_path = f'models/sweep_models/trained_{model_name}_{dataset_name}.pth'
     train_dataset = dataset_factory[config['dataset']['name']](
                     **config['dataset']['kwargs'], mode="train", 
                     transforms=apply_augmentation)
@@ -83,22 +88,22 @@ def main(config, seed=42):
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    with open(args.config, 'r') as file:
-        config = yaml.safe_load(file)
+    # args = parse_args()
+    # with open(args.config, 'r') as file:
+    #     config = yaml.safe_load(file)
     sweep_config = {
         "model": 
             {
-                "name":["ca_siamese", "unet", "cnn"],
-                "kwargs": {},
+                "name":["pixel_mlp"],
+                "kwargs": {
+                    "pe_alg": ["sinusoidal", "learned", "fourier"]
+                    },
             },
         "dataset":
             {
-                "name": ["urban"],
+                "name": ["jasper_ridge", "urban"],
                 "kwargs":{
-                    # "A": [0.1, 0.3, 0.75],
-                    # "gamma": [0.4, 0.7, 1.0, 2.5]
-                    "contrast_enhance": [True, False]
+                    "split_ratio": [0.25, 0.5, 0.75, 0.95]
                 }
             }
     }
@@ -107,12 +112,12 @@ if __name__ == "__main__":
     config_generator = ConfigGenerator(sweep_config)
     combinations = config_generator.get_all_configs()
     for combination in tqdm(combinations):
-        result = run_experiment(config, combination)
+        result = run_experiment(combination)
         results.append(result)
     # Convert results to a DataFrame for easy analysis
     df = pd.DataFrame(results)
     # Save results to CSV
     os.makedirs('artifacts', exist_ok=True)
-    filename = 'artifacts/experiment_urban_contrast_enhance.csv'
+    filename = 'artifacts/experiments_data_efficiency_pe_alg_compare.csv'
     df.to_csv(filename, index=False)
     print(f"Experiments completed. Results saved to '{filename}'")

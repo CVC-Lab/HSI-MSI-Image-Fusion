@@ -75,8 +75,10 @@ class BaseSegmentationDataset(Dataset):
         indices = list(range(0, self.max_width_index * self.max_height_index, stride))
         if mode != 'test_full':
             train_indices, test_indices = train_test_split(
-                indices, test_size=(1 - split_ratio), random_state=seed
-            )
+                indices, test_size=(1 - split_ratio + 0.2), random_state=seed
+            ) 
+        # we add 20% to adjust for extra pixels seen because of large patch size
+        # see actual number of pixels seen in data percentage
         self.mode = mode
         if self.mode == 'train':
             self.indices = train_indices
