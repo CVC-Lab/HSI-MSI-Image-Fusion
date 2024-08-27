@@ -96,14 +96,15 @@ if __name__ == "__main__":
             {
                 "name":["pixel_mlp"],
                 "kwargs": {
-                    "pe_alg": ["sinusoidal", "learned", "fourier"]
+                    "pe_alg": ["sinusoidal"]
                     },
             },
         "dataset":
             {
                 "name": ["jasper_ridge", "urban"],
                 "kwargs":{
-                    "split_ratio": [0.25, 0.5, 0.75, 0.95]
+                    "split_ratio": [0.25, 0.5, 0.75, 0.95],
+                    "contrast_enhance": [True]
                 }
             }
     }
@@ -118,6 +119,6 @@ if __name__ == "__main__":
     df = pd.DataFrame(results)
     # Save results to CSV
     os.makedirs('artifacts', exist_ok=True)
-    filename = 'artifacts/experiments_data_efficiency_pe_alg_compare.csv'
+    filename = 'artifacts/experiments_data_efficiency_ce_true.csv'
     df.to_csv(filename, index=False)
     print(f"Experiments completed. Results saved to '{filename}'")
