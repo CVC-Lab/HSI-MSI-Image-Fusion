@@ -46,6 +46,7 @@ class BaseSegmentationDataset(Dataset):
                  img_sri, img_rgb, gt, 
                  rgb_width, rgb_height,
                  hsi_width, hsi_height,
+                 data_type="pixel",
                  channels=None, 
                  mode="train", transforms=None, 
                  split_ratio=0.8, seed=42, A=0.8,
@@ -77,6 +78,8 @@ class BaseSegmentationDataset(Dataset):
             train_indices, test_indices = train_test_split(
                 indices, test_size=(1 - split_ratio + 0.2), random_state=seed
             ) 
+            
+        self.data_type = data_type
         # we add 20% to adjust for extra pixels seen because of large patch size
         # see actual number of pixels seen in data percentage
         self.mode = mode
@@ -166,7 +169,9 @@ class BaseSegmentationDataset(Dataset):
             sub_hsi = np.moveaxis(sub_hsi, 2, 0)
             sub_rgb = np.moveaxis(sub_rgb, 2, 0)
             sub_gt = np.moveaxis(sub_gt, 2, 0)
-        
+            
+        if self.data_type == 'pixel':
+            sub_hsi, sub_rgb, sub_gt = self.make_pixel_data(sub_hsi, sub_rgb, sub_gt)
         return sub_hsi, sub_rgb, sub_gt
     
     def get_rgb(self, img_sri):
@@ -195,7 +200,22 @@ class BaseSegmentationDataset(Dataset):
         # result = torch.cat([pixel_coordinates, torch.from_numpy(x_flattened)], dim=1)
         return pixel_coordinates_x, pixel_coordinates_y
         
-    
+        
+    def make_pixel_data(self, img_hsi, img_rgb, gt):
+        img_hsi = rearrange(img_hsi, "C W H -> W H C")
+        img_rgb = rearrange(img_rgb, "C W H -> W H C")
+        gt = rearrange(gt, "C W H -> W H C")
+        # img_hsi = torch.from_numpy(img_hsi)
+        # img_rgb = torch.from_numpy(img_rgb)
+        # gt = torch.from_numpy(gt)
+        num_classes = len(self.label_names)
+        pc_rgb, pc_hsi = self.get_pixel_coords(img_rgb, img_hsi)
+        super_pixels = torch.from_numpy(img_hsi[pc_hsi[:, 0],pc_hsi[:, 1], :])
+        pixels = torch.from_numpy(img_rgb.reshape(-1, img_rgb.shape[-1]))
+        series = torch.cat([pixels, super_pixels, pc_rgb], dim=1) 
+        gt_reshaped = gt.reshape(-1, gt.shape[-1]) 
+        return series, img_rgb, gt_reshaped
+        
     def build_pixel_wise_dataset(self):
         num_classes = len(self.label_names)
         self.img_hsi = self.downsample(self.img_sri[:, :, self.channels])

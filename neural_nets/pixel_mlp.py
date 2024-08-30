@@ -61,6 +61,12 @@ class PixelMLP(nn.Module):
         ])
     
     def forward(self, x, y=None):
+        patch_type_data = False
+        if len(x.shape) == 3:
+            B, N, C = x.shape
+            x = rearrange(x, "B N C -> (B N) C")
+            patch_type_data = True
+            
         position_values = x[:,  -2:]
         pos_emb = self.pe(position_values)
         # x - [rgb_pixel, hsi_super_pixel, position_values]
@@ -76,6 +82,9 @@ class PixelMLP(nn.Module):
             feat_emb = pixel_values
         x = torch.cat([feat_emb, pos_emb], dim=-1)
         x = self.net(x) # add softmax as part of loss func
+        if patch_type_data:
+            H, W = y.shape[1:3]
+            x = x.reshape(B, H, W, -1)
         return {
             'preds': x
         }

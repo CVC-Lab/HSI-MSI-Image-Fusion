@@ -20,7 +20,7 @@ model:
   input_mode: hsi_msi
 
 dataset:
-  name: jasper_ridge_pixel
+  name: jasper_ridge
   kwargs:
     classes: ["road", "soil", "water", "tree"]
     single_img_path: 'data/jasper/jasper_ridge_224.mat'
@@ -39,7 +39,8 @@ dataset:
     window_size: 3
     A: 0.8
     split_ratio: 0.25
-  batch_size: 2048
+    data_type: pixel
+  batch_size: 1024
 
 loss: 
   name: focal

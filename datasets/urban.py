@@ -127,54 +127,6 @@ class UrbanDataset(BaseSegmentationDataset):
         return RGB_image
 
 
-class MotionCodeUrban(UrbanDataset):
-    
-    def __init__(self, data_dir,
-                 rgb_width, rgb_height,
-                 hsi_width, hsi_height,
-                 top_k=24, 
-                 channels=None, 
-                 mode="train", 
-                 transforms=None, 
-                 split_ratio=0.8, seed=42, 
-                 window_size=5, conductivity=0.95,
-                 gamma=0.4, contrast_enhance=True,
-                 **kwargs):
-        ## TODO: call init of JasperRidgeDataset
-        self.top_k = top_k
-        super().__init__(data_dir=data_dir, 
-                         rgb_width=rgb_width, 
-                         rgb_height=rgb_height, 
-                         hsi_width=hsi_width, 
-                         hsi_height=hsi_height, top_k=top_k,
-                         channels=channels, mode=mode, 
-                         transforms=transforms, 
-                         split_ratio=split_ratio, seed=seed, 
-                         window_size=window_size, 
-                         conductivity=conductivity, 
-                         gamma=gamma, 
-                         contrast_enhance=contrast_enhance)
-        self.Y_train, self.Y_all = None, None
-        self.labels_train, self.labels_all = None, None
-        self.img_hsi = None
-        self.build_pixel_wise_dataset()
-        if mode == 'train':
-            self.Y, self.labels = self.Y_train, self.labels_train
-        else:
-            self.Y, self.labels = self.Y_all, self.labels_all
-        
-        
-    def __len__(self,):
-        return self.Y.shape[0]
-        
-    def __getitem__(self, idx):
-        return self.Y[idx], self.Y[idx], self.labels[idx]
-    
-    def __repr__(self):
-        total_pixels = self.labels_all.shape[0]
-        data_percentage = (self.Y.shape[0]/ total_pixels) * 100
-        return f"dataset contains {data_percentage}% overall data"
-
 
 if __name__ == '__main__':
     data_dir = "/mnt/data/shubham/hsi_msi/urban"
