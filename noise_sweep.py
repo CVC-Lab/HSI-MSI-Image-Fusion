@@ -31,8 +31,6 @@ def run_experiment(experiment_config):
     with open(f'configs/{dataset_name}.yaml', 'r') as f:
         config = yaml.safe_load(f)
     model_name = experiment_config['model']['name']
-    if model_name == 'pixel_mlp':
-        dataset_name += "_pixel"
     # Update the config with the current experiment configuration
     config['model']['kwargs'].update(experiment_config['model']['kwargs'])
     config['model']['name'] = model_name
@@ -57,6 +55,8 @@ def main(config, seed=42):
     A = config["dataset"]["kwargs"]["A"]
     gamma = config["dataset"]["kwargs"]["gamma"]
     save_path = f'models/sweep_models/trained_{model_name}_{dataset_name}.pth'
+    if model_name.startswith("pixel"):
+        config["dataset"]["kwargs"]["data_type"] = "pixel"
     train_dataset = dataset_factory[config['dataset']['name']](
                     **config['dataset']['kwargs'], mode="train", 
                     transforms=apply_augmentation)
@@ -79,11 +79,13 @@ def main(config, seed=42):
     writer = SummaryWriter()
     final_ep_loss = main_training_loop(train_loader, net, optimizer, scheduler, 
                        writer=writer, save_path=save_path,
-                    num_epochs=config["num_epochs"], device=DEVICE, log_interval=2, config=config)
+                    num_epochs=config["num_epochs"], device=DEVICE, log_interval=1, config=config)
     # Close the writer
     writer.close()
     mIOU, gdice = test(test_loader, net, save_path=save_path, 
                     num_classes=config['model']['kwargs']['output_channels'])
+    print(mIOU, gdice)
+    config["dataset"]["kwargs"]["data_type"] = None
     return net, mIOU, gdice
 
 
@@ -96,15 +98,15 @@ if __name__ == "__main__":
             {
                 "name":["pixel_mlp"],
                 "kwargs": {
-                    "pe_alg": ["sinusoidal"]
                     },
             },
         "dataset":
             {
-                "name": ["jasper_ridge", "urban"],
+                "name": ["urban"],
                 "kwargs":{
-                    "split_ratio": [0.25, 0.5, 0.75, 0.95],
-                    "contrast_enhance": [True]
+                    # "A": [0.1, 0.3, 0.75],
+                    # "gamma": [0.4, 0.7, 1.0, 2.5]
+                    "split_ratio": [0.25, 0.50, 0.75, 0.95]
                 }
             }
     }
@@ -119,6 +121,6 @@ if __name__ == "__main__":
     df = pd.DataFrame(results)
     # Save results to CSV
     os.makedirs('artifacts', exist_ok=True)
-    filename = 'artifacts/experiments_data_efficiency_ce_true.csv'
+    filename = 'artifacts/experiments_pixelmlp_final_compare.csv'
     df.to_csv(filename, index=False)
     print(f"Experiments completed. Results saved to '{filename}'")

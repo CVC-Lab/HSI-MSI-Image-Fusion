@@ -89,6 +89,7 @@ def apply_augmentation(hsi, gt, get_rgb, downsample, channels, A=0.8):
 
 # Apply transformations to an image
 def apply_transforms(hsi, msi, gt):
+    pdb.set_trace()
     transformed = albumentations_transform(image=hsi, msi=msi, gt=gt)
     transformed['gt'] = rearrange(transformed['gt'], "H W C -> C H W")
     return transformed['image'], transformed['msi'], transformed['gt']

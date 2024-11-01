@@ -25,7 +25,16 @@ color_mappings = {
         1: [244, 164, 96],  # Soil - SandyBrown
         2: [0, 0, 255],     # Water - Blue
         3: [34, 139, 34],   # Tree - ForestGreen
+    },
+    "urban": {
+        0: [255, 0, 0],     # Asphalt - Red
+        1: [0, 255, 0],     # Grass - Green
+        2: [128, 0, 128],   # Tree - Purple
+        3: [255, 165, 0],   # Roof - Orange
+        4: [128, 128, 128], # Metal - Gray
+        5: [165, 42, 42],   # Dirt - Brown
     }
+    
 }
 
 
@@ -86,8 +95,16 @@ def plot_heatmap(values, output_path):
     plt.close()
 
 
+def get_predictions_from_model(model_name, dataset_name, config):
+    save_path = f'models/{model_name}_{dataset_name}.pth'
+    DEVICE = torch.device(f"cuda:{config['device']}" if torch.cuda.is_available() else "cpu")
+    net = model_factory[model_name](**config['model']['kwargs']).to(torch.double).to(DEVICE)
+    net.load_state_dict(torch.load(save_path))
+    net.to(DEVICE)
+
 
 def main():
+    models = ["pixel_mlp", "ca_siamese", "cnn", "unet"]
     os.makedirs('images/zoomed/', exist_ok=True)
     args = parse_args()
     with open(args.config, 'r') as file:
@@ -99,51 +116,52 @@ def main():
     train_dataset = dataset_factory[config['dataset']['name']](
                     **config['dataset']['kwargs'], mode="train", 
                     transforms=None)
-    save_path = f'models/trained_{model_name}_{dataset_name}_final_noisy.pth'
-    DEVICE = torch.device(f"cuda:{config['device']}" if torch.cuda.is_available() else "cpu")
-    net = model_factory[model_name](**config['model']['kwargs']).to(torch.double).to(DEVICE)
-    net.load_state_dict(torch.load(save_path))
-    net.to(DEVICE)
-    num_classes = 4
-    miou = MeanIoU(num_classes=num_classes, per_class=True)
-    gdice = GeneralizedDiceScore(num_classes=num_classes, include_background=False)
+    
+    num_classes = len(train_dataset.label_names)
     sri, msi, gt = train_dataset.img_sri, train_dataset.img_rgb, train_dataset.gt
     # Example bounding boxes (x_min, y_min, x_max, y_max)
-    
+    gt_save_path = f'images/zoomed/{dataset_name}_gt.png'
+    if not os.path.exists(gt_save_path):
+        # save gt image as colored image first and see where to add bounding box
+        gt_save = predictions_to_colored_image(np.argmax(gt, axis=-1), 
+                                            color_mapping=color_mappings['urban'])
+        save_colored_image(gt_save, gt_save_path)
+    pdb.set_trace()
     bboxes = [
         (0, 0, 35, 40),
         (80, 10, 100, 40)
     ]
-    if not os.path.exists('images/zoomed/gt.png'):
-        save_colored_image(pred_img, f'images/zoomed/gt.png')
-        preds = np.argmax(gt, axis=-1)
-        pred_img = predictions_to_colored_image(preds, color_mappings[dataset_name])
+    # if not os.path.exists('images/zoomed/gt.png'):
+    #     save_colored_image(pred_img, f'images/zoomed/gt.png')
+    #     preds = np.argmax(gt, axis=-1)
+    #     pred_img = predictions_to_colored_image(preds, color_mappings[dataset_name])
         
-        # Extract and upsample regions within bounding boxes
-        upsample_size = pred_img.shape[:-1]  # Example upsample size
-        upsampled_images = extract_and_upsample(pred_img, bboxes, upsample_size)
+    #     # Extract and upsample regions within bounding boxes
+    #     upsample_size = pred_img.shape[:-1]  # Example upsample size
+    #     upsampled_images = extract_and_upsample(pred_img, bboxes, upsample_size)
     
-        # Draw bounding boxes on the prediction image
-        pred_img_with_bboxes = draw_bounding_boxes(pred_img, bboxes)
-        save_colored_image(pred_img_with_bboxes, 'images/zoomed/gt_with_bboxes.png')
+    #     # Draw bounding boxes on the prediction image
+    #     pred_img_with_bboxes = draw_bounding_boxes(pred_img, bboxes)
+    #     save_colored_image(pred_img_with_bboxes, 'images/zoomed/gt_with_bboxes.png')
         
-        # Save upsampled images
-        for i, upsampled_img in enumerate(upsampled_images):
-            save_colored_image(upsampled_img, f'images/zoomed/upsampled_gt_{i}.png')
+    #     # Save upsampled images
+    #     for i, upsampled_img in enumerate(upsampled_images):
+    #         save_colored_image(upsampled_img, f'images/zoomed/upsampled_gt_{i}.png')
     
     
         
     sub_hsi = train_dataset.downsample(sri)
     sub_hsi = np.moveaxis(sub_hsi, 2, 0)[None, :, :, :]
     msi = np.moveaxis(msi, 2, 0)[None, :, :, :]
-    sub_hsi = torch.from_numpy(sub_hsi)
-    msi = torch.from_numpy(msi)
-    outputs = net(sub_hsi.to(DEVICE), msi.to(DEVICE))
+    sub_hsi = torch.from_numpy(sub_hsi).squeeze().to(torch.double)
+    msi = torch.from_numpy(msi).squeeze().to(torch.double)
+    Y_all = train_dataset.Y_all
+    outputs = net(Y_all.to(DEVICE), msi.to(DEVICE))
     predictions = torch.argmax(outputs['preds'].cpu(), axis=1).squeeze()
-    miou_score = miou(predictions, torch.from_numpy(np.argmax(gt, axis=-1))).numpy()
-    gdice_score = gdice(predictions[None, :, :], torch.from_numpy(np.argmax(gt, axis=-1))[None, :, :]).numpy()
-    print('miou:', miou_score)
-    print('gDice:', gdice_score)
+    # miou_score = miou(predictions, torch.from_numpy(np.argmax(gt, axis=-1))).numpy()
+    # gdice_score = gdice(predictions[None, :, :], torch.from_numpy(np.argmax(gt, axis=-1))[None, :, :]).numpy()
+    # print('miou:', miou_score)
+    # print('gDice:', gdice_score)
     pred_img = predictions_to_colored_image(predictions, color_mappings[dataset_name])
     save_colored_image(pred_img, f'images/zoomed/{model_name}_{dataset_name}_noisy.png')
     

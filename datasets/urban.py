@@ -78,9 +78,11 @@ class UrbanDataset(BaseSegmentationDataset):
                  hsi_width, hsi_height,
                  top_k, 
                  mode="train", transforms=None, split_ratio=0.8, seed=42,
+                 data_type=None,
                  channels=None,
                  window_size=5, conductivity=0.95, 
                  gamma=0.4, contrast_enhance=True,
+                 low_light=True,
                  **kwargs):
         data_dir = Path(data_dir)
         single_img_path = data_dir / "Urban_R162.mat"
@@ -97,8 +99,8 @@ class UrbanDataset(BaseSegmentationDataset):
                                         dataset_name='urban')
         else:
             self.channels = list(range(0, img_sri.shape[-1]))
-        
-        img_sri = adjust_gamma_hyperspectral(img_sri, gamma=gamma)
+        if low_light:
+            img_sri = adjust_gamma_hyperspectral(img_sri, gamma=gamma)
         if contrast_enhance:
             img_sri = contrast_enhancement((img_sri*255).astype(np.uint8), 
                                                 window_size=window_size, 
@@ -112,9 +114,11 @@ class UrbanDataset(BaseSegmentationDataset):
                          rgb_width=rgb_width,
                          rgb_height=rgb_height, hsi_width=hsi_width, 
                          hsi_height=hsi_height,
+                         data_type=data_type,
                          channels=self.channels, 
                          mode=mode, transforms=transforms, 
-                         split_ratio=split_ratio, seed=seed, stride=8)
+                         split_ratio=split_ratio, seed=seed, stride=8, **kwargs)
+        # self.build_pixel_wise_dataset()
     
     def get_rgb(self, img_sri):
         closest_bands = find_closest_bands(wavelengths, RGB_wavelengths)

@@ -25,7 +25,7 @@ feature_embedding = {
 class PixelMLP(nn.Module):
     def __init__(self, hsi_in, msi_in, 
                  feature_embedding_dim, position_embedding_dim, a,
-                 output_channels, act, fe_alg, pe_alg, input_mode, **kwargs):
+                 output_channels, act, fe_alg, pe_alg, input_mode, use_pe, **kwargs):
         super().__init__()
         self.position_embedding_dim = position_embedding_dim
         self.pe = PositionalEmbeddingFactory.get_embedding(pe_alg, 
@@ -45,28 +45,49 @@ class PixelMLP(nn.Module):
         self.hsi_in = hsi_in
         self.msi_in = msi_in
         self.input_mode = input_mode
-        total_in = fdim + position_embedding_dim
+        self.use_pe = use_pe
+        if use_pe:   
+            total_in = fdim + position_embedding_dim
+        else:
+            total_in = fdim
+        # self.net = nn.Sequential(*[
+        #     nn.Linear(total_in, total_in),
+        #     activation_layers[act](),
+        #     nn.Linear(total_in, (total_in)//2),
+        #     activation_layers[act](),
+        #     nn.Linear((total_in)//2, (total_in)//4),
+        #     activation_layers[act](),
+        #     nn.Linear((total_in)//4, (total_in)//4),
+        #     activation_layers[act](),
+        #     nn.Linear((total_in)//4, (total_in)//8),
+        #     activation_layers[act](),
+        #     nn.Linear((total_in)//8, output_channels),
+        # ])
         self.net = nn.Sequential(*[
             nn.Linear(total_in, total_in),
+            nn.BatchNorm1d(total_in),
             activation_layers[act](),
-            nn.Linear(total_in, (total_in)//2),
+            nn.Linear(total_in, total_in // 2),
+            nn.BatchNorm1d(total_in // 2),
             activation_layers[act](),
-            nn.Linear((total_in)//2, (total_in)//4),
+            nn.Linear(total_in // 2, total_in // 4),
+            nn.BatchNorm1d(total_in // 4),
             activation_layers[act](),
-            nn.Linear((total_in)//4, (total_in)//4),
+            nn.Linear(total_in // 4, total_in // 4),
+            nn.BatchNorm1d(total_in // 4),
             activation_layers[act](),
-            nn.Linear((total_in)//4, (total_in)//8),
+            nn.Linear(total_in // 4, total_in // 8),
+            nn.BatchNorm1d(total_in // 8),
             activation_layers[act](),
-            nn.Linear((total_in)//8, output_channels),
+            nn.Linear(total_in // 8, output_channels),
         ])
     
-    def forward(self, x, y=None):
+    def forward(self, x, y=None, emb_pos=False):
         patch_type_data = False
-        if len(x.shape) == 3:
-            B, N, C = x.shape
-            x = rearrange(x, "B N C -> (B N) C")
+        if len(x.shape) == 4:
+            B, H, W, C = x.shape
+            x = rearrange(x, "B H W C -> (B H W) C")
             patch_type_data = True
-            
         position_values = x[:,  -2:]
         pos_emb = self.pe(position_values)
         # x - [rgb_pixel, hsi_super_pixel, position_values]
@@ -80,11 +101,16 @@ class PixelMLP(nn.Module):
             feat_emb = self.fe(pixel_values)
         else:
             feat_emb = pixel_values
-        x = torch.cat([feat_emb, pos_emb], dim=-1)
+        if self.use_pe:
+            x = torch.cat([feat_emb, pos_emb], dim=-1)
+        else:
+            x = feat_emb
+    
         x = self.net(x) # add softmax as part of loss func
         if patch_type_data:
             H, W = y.shape[1:3]
             x = x.reshape(B, H, W, -1)
+            x = rearrange(x, "B H W C -> B C H W")
         return {
             'preds': x
         }

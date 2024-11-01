@@ -36,12 +36,14 @@ class JasperRidgeDataset(BaseSegmentationDataset):
                  rgb_width, rgb_height,
                  hsi_width, hsi_height,
                  top_k,
+                 data_type=None,
                  channels=None, 
                  mode="train", 
                  transforms=None, 
                  split_ratio=0.8, seed=42, 
                  window_size=5, conductivity=0.95,
                  gamma=0.4, contrast_enhance=True,
+                 low_light=True,
                  **kwargs):
         
         self.colors = ['purple', 'brown', 'blue', 'green']
@@ -51,26 +53,29 @@ class JasperRidgeDataset(BaseSegmentationDataset):
         self.channels = get_top_channels(num_motion=num_classes, 
                                     top_k=self.top_k,
                                     dataset_name='jasper_ridge')
-        
         self.start_band = start_band
         self.end_band = end_band
         img_sri, gt = input_processing(single_img_path, single_gt_path)
-        img_sri = adjust_gamma_hyperspectral(img_sri, gamma=gamma)
+        if low_light:
+            img_sri = adjust_gamma_hyperspectral(img_sri, gamma=gamma)
         if contrast_enhance:
             img_sri = contrast_enhancement((img_sri*255).astype(np.uint8), 
                                                 window_size=window_size, 
                                                 conductivity=conductivity)/255
         img_rgb = self.get_rgb(img_sri)
+        
         super().__init__(img_sri=img_sri, 
                          img_rgb=img_rgb,
                          gt=gt,
                          rgb_width=rgb_width,
                          rgb_height=rgb_height, hsi_width=hsi_width, 
                          hsi_height=hsi_height,
+                         data_type=data_type,
                          channels=self.channels,
                          top_k=self.top_k, 
                          mode=mode, transforms=transforms, 
-                         split_ratio=split_ratio, seed=seed, stride=1)
+                         split_ratio=split_ratio, seed=seed, stride=1, **kwargs)
+        # self.build_pixel_wise_dataset()
         
         
     def get_rgb(self, img_sri):
